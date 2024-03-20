@@ -11,6 +11,8 @@ import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
 import Contoso from "../../assets/Contoso.svg";
+import PrimaryBlack from "../../assets/Primary black logo.png";
+import SecondaryX from  "../../assets/Secondary X.png";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
 
 import {
@@ -641,7 +643,7 @@ const Chat = () => {
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
                                 <img
-                                    src={ui?.chat_logo ? ui.chat_logo : Contoso}
+                                    src={ui?.chat_logo ? ui.chat_logo : SecondaryX}
                                     className={styles.chatIcon}
                                     aria-hidden="true"
                                 />
@@ -737,14 +739,19 @@ const Chat = () => {
                                     role="button"
                                     styles={{
                                         icon: {
-                                            color: '#FFFFFF',
+                                            color: 'black',
+                                        },
+                                        iconHovered: {
+                                            color: 'black',
                                         },
                                         iconDisabled: {
                                             color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            color: '#FFFFFF',
-                                            background: "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)",
+                                            background: "#F0F0F0"
+                                        },
+                                        rootHovered: {
+                                            background: '#cafce5',
                                         },
                                         rootDisabled: {
                                             background: "#F0F0F0"

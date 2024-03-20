@@ -7,6 +7,8 @@ import { useContext, useEffect, useState } from "react";
 import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
 import { CosmosDBStatus } from "../../api";
+import PrimaryX from "../../assets/Primary X.png";
+import PrimaryWhiteLogo from  "../../assets/Primary white logo.png";
 
 const Layout = () => {
     const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false);
@@ -63,14 +65,14 @@ const Layout = () => {
     
         return () => window.removeEventListener('resize', handleResize);
       }, []);
-
+    console.log('ui title is :',  ui?.title ? ui.title : "TPXimpact AI")
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
                 <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
                     <Stack horizontal verticalAlign="center">
                         <img
-                            src={ui?.logo ? ui.logo : Contoso}
+                            src={ui?.logo ? ui.logo : PrimaryWhiteLogo}
                             className={styles.headerIcon}
                             aria-hidden="true"
                         />
