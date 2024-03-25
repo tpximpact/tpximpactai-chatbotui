@@ -3,6 +3,7 @@ import { Stack, TextField } from "@fluentui/react";
 import { SendRegular } from "@fluentui/react-icons";
 import Send from "../../assets/Send.svg";
 import styles from "./QuestionInput.module.css";
+import COLOURS from "../../constants/COLOURS";
 
 interface Props {
     onSend: (question: string, id?: string) => void;
@@ -55,6 +56,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
                 value={question}
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
+                styles={{
+                    field: {
+                      fontFamily: 'DMSans-Regular',
+                    },
+                  }}
+                
             />
             <div className={styles.questionInputSendButtonContainer} 
                 role="button" 
@@ -71,5 +78,6 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
             </div>
             <div className={styles.questionInputBottomBorder} />
         </Stack>
+
     );
 };

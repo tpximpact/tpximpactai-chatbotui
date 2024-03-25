@@ -162,6 +162,7 @@
     text-align: center;
     color: #424242;
     cursor: pointer;
+    font-family: "DMSans-Regular";
 }
 
 .clickableSup:hover {

@@ -33,6 +33,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    width:90%
 }
 
 .chatEmptyStateTitle {
@@ -45,7 +46,7 @@
     line-height: 24px;
     margin-top: 36px;
     margin-bottom: 0px;
-    font-family: 'Playfair Display';
+    font-family: 'PlayfairDisplay';
 }
 
 .chatEmptyStateSubtitle {
@@ -58,18 +59,18 @@
     text-align: center;
     letter-spacing: -0.01em;
     color: #616161;
-    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family:'DMSans-Regular', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .chatIcon {
-    height: 100px;
+    height: 175px;
     width: auto;
 }
 
 .chatMessageStream {
     flex-grow: 1;
     max-width: 1028px;
-    width: 100%;
+    width: 95%;
     overflow-y: auto;
     padding-left: 24px;
     padding-right: 24px;
@@ -82,6 +83,7 @@
     display: flex;
     justify-content: flex-end;
     margin-bottom: 12px;
+
 }
 
 .chatMessageUserMessage {
@@ -100,6 +102,7 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     max-width: 80%;
+    font-family: "DMSans-Regular";
 }
 
 .chatMessageGpt {
@@ -121,7 +124,7 @@
 }
 
 .chatMessageErrorContent {
-    font-family: "Segoe UI";
+    font-family: "DMSans-Regular";
     font-style: normal;
     font-weight: 400;
     font-size: 14px;
@@ -151,13 +154,13 @@
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    position: absolute;
     width: 50px;
     height: 50px;
+    position: absolute;
     left: 7px;
     top: 13px;
     color: #FFFFFF;
-    border-radius: 90px;
+    border-radius: 15px;
     z-index: 1;
 }
 
@@ -173,7 +176,7 @@
     left: 7px;
     top: 66px;
     color: #FFFFFF;
-    border-radius: 90px;
+    border-radius: 15px;
     z-index: 1;
 }
 
@@ -184,12 +187,12 @@
     justify-content: center;
     align-items: center;
     position: absolute;
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     left: 7px;
     top: 66px;
     color: #FFFFFF;
-    border-radius: 4px;
+    border-radius: 15px;
     z-index: 1;
 }
 

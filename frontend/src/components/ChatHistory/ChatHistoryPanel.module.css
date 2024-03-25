@@ -8,9 +8,23 @@
     max-height: calc(90vh - 105px);
 }
 
+.panelTitle {
+    align-self: center;
+    font-weight: 600;
+    font-size: 18px;
+    margin-right: auto;
+    padding-left: 20px;
+    font-family: 'OswaldBold';
+    color: #ffffff;
+}
+
+.panelButtons {
+    color:#ffffff;
+}
+
 .itemCell {
     max-width: 270px;
-    min-height: 32px;
+    min-height: 40px;
     cursor: pointer;
     padding-left: 15px;
     padding-right: 5px;
@@ -22,24 +36,33 @@
 }
 
 .itemCell:hover {
-    background: #E6E6E6;
+    background: #141414;
 }
 
 .itemButton {
+    color:#141414;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 28px;
     height: 28px;
-    border: 1px solid #d1d1d1;
-    border-radius: 5px;
-    background-color: white;
+    background-color: #ffffff;
     margin: auto 2.5px;
     cursor: pointer;
+
 }
 
+.itemButton2 {
+}
+
+
 .itemButton:hover {
-    background-color: #E6E6E6;
+    color:#141414;
+    background-color: #e7d2ff;
+}
+.itemButton2:hover {
+    color:#141414;
+    background-color: #c8e9ff;
 }
 
 .chatGroup {
@@ -63,6 +86,8 @@
     font-weight: 600;
     margin-bottom: 5px;
     padding-left: 15px;
+    font-family: 'DMSans-SemiBold';
+    color: #ffffff;
 }
 
 .chatTitle {
@@ -70,6 +95,9 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-family: 'PlayfairDisplay';
+    font-size: 18px;
+    color: #ffffff;
 }
 
 @media (max-width: 480px) {

@@ -1,4 +1,4 @@
-import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarStyles, IContextualMenuItem, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text } from "@fluentui/react";
+import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarStyles, IContextualMenuItem, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text, mergeStyles } from "@fluentui/react";
 import { useBoolean } from '@fluentui/react-hooks';
 
 import styles from "./ChatHistoryPanel.module.css"
@@ -21,8 +21,8 @@ const commandBarStyle: ICommandBarStyles = {
         padding: '0',
         display: 'flex',
         justifyContent: 'center',
-        backgroundColor: 'transparent'
-    },
+        backgroundColor: 'transparent',
+    }
 };
 
 const commandBarButtonStyle: Partial<IStackStyles> = { root: { height: '50px' } };
@@ -88,12 +88,12 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
         <section className={styles.container} data-is-scrollable aria-label={"chat history panel"}>
             <Stack horizontal horizontalAlign='space-between' verticalAlign='center' wrap aria-label="chat history header">
                 <StackItem>
-                    <Text role="heading" aria-level={2} style={{ alignSelf: "center", fontWeight: "600", fontSize: "18px", marginRight: "auto", paddingLeft: "20px" }}>Chat history</Text>
+                    <Text role="heading" aria-level={2} className={styles.panelTitle}>CHAT HISTORY</Text>
                 </StackItem>
                 <Stack verticalAlign="start">
                     <Stack horizontal styles={commandBarButtonStyle}>
                         <CommandBarButton
-                            iconProps={{ iconName: 'More' }}
+                            iconProps={{ iconName: 'More', className: styles.panelButtons }}
                             title={"Clear all chat history"}
                             onClick={onShowContextualMenu}
                             aria-label={"clear all chat history"}
@@ -109,7 +109,7 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
                             onDismiss={onHideContextualMenu}
                         />
                         <CommandBarButton
-                            iconProps={{ iconName: 'Cancel' }}
+                            iconProps={{ iconName: 'Cancel', className: styles.panelButtons }}
                             title={"Hide"}
                             onClick={handleHistoryClick}
                             aria-label={"hide button"}

@@ -1,4 +1,4 @@
-import { CommandBarButton, DefaultButton, IButtonProps } from "@fluentui/react";
+import { CommandBarButton, DefaultButton, IButtonProps, IconButton, Image} from "@fluentui/react";
 
 import styles from './Button.module.css';
 
@@ -28,3 +28,19 @@ export const HistoryButton: React.FC<ButtonProps> = ({ onClick, text }) => {
     />
   )
 }
+
+interface HistoryArrowButtonProps {
+  image: string;
+  onClick: () => void;
+}
+
+export const HistoryArrowButton: React.FC<HistoryArrowButtonProps> = ({ image, onClick }) => {
+  return (
+    <IconButton
+      onClick={onClick}
+      styles={{ root: { padding:0} }} // Remove padding to make IconButton fit the image
+    >
+      <Image src={image} alt="Arrow button to open menu" width={32} height={32}  />
+    </IconButton>
+  );
+};

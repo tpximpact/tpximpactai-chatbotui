@@ -14,6 +14,10 @@ import Contoso from "../../assets/Contoso.svg";
 import PrimaryBlack from "../../assets/Primary black logo.png";
 import SecondaryX from  "../../assets/Secondary X.png";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
+import arrowLeft from "../../assets/fatarrowleft.png";
+import arrowRight from "../../assets/fatarrowright.png";
+
+
 
 import {
     ChatMessage,
@@ -36,6 +40,7 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
+import { HistoryArrowButton } from "../../components/common/Button";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -623,6 +628,10 @@ const Chat = () => {
     const disabledButton = () => {
         return isLoading || (messages && messages.length === 0) || clearingChat || appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading
     }
+    const handleHistoryClick = () => {
+        appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+    };
+
 
     return (
         <div className={styles.container} role="main">
@@ -639,7 +648,32 @@ const Chat = () => {
                 </Stack>
             ) : (
                 <Stack horizontal className={styles.chatRoot}>
+
+                    {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
+
                     <div className={styles.chatContainer}>
+                    <div
+  style={{
+    transform: 'scaleX(0.7)',
+    position: "absolute",
+    top: '45%',
+    left: "0px",
+    display: appStateContext?.state?.isChatHistoryOpen ? "none" : "block",
+ // Add cursor style to indicate it's clickable
+  }}
+>
+  {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && (
+    <img
+    onClick={handleHistoryClick}
+
+      src={appStateContext?.state?.isChatHistoryOpen ? arrowLeft : arrowRight}
+      alt="Arrow"
+      style={{ width: '70px', height: 'auto',cursor: 'pointer', padding:'20px'}}
+    />
+  )}
+</div>
+
+
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
                                 <img
@@ -716,14 +750,19 @@ const Chat = () => {
                                     role="button"
                                     styles={{
                                         icon: {
-                                            color: '#FFFFFF',
+                                            color: 'black',
+                                        },
+                                        iconHovered: {
+                                            color: 'black',
                                         },
                                         iconDisabled: {
-                                            color: "#BDBDBD !important"
+                                            color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            color: '#FFFFFF',
-                                            background: "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)"
+                                            background: "#F0F0F0"
+                                        },
+                                        rootHovered: {
+                                            background: '#cafce5',
                                         },
                                         rootDisabled: {
                                             background: "#F0F0F0"
@@ -751,7 +790,7 @@ const Chat = () => {
                                             background: "#F0F0F0"
                                         },
                                         rootHovered: {
-                                            background: '#cafce5',
+                                            background: '#ffcfca',
                                         },
                                         rootDisabled: {
                                             background: "#F0F0F0"
@@ -801,7 +840,6 @@ const Chat = () => {
                             </div>
                         </Stack.Item>
                     )}
-                    {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
                 </Stack>
             )}
         </div>

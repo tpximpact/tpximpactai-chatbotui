@@ -1,3 +1,45 @@
+
+@font-face {
+    font-family: 'DMSans-Bold';
+    src: url('./assets/fonts/DMSans-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DMSans-Italic';
+    src: url('./assets/fonts/DMSans-Italic.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DMSans-Light';
+    src: url('./assets/fonts/DMSans-Light.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DMSans-Regular';
+    src: url('./assets/fonts/DMSans-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DMSans-SemiBold';
+    src: url('./assets/fonts/DMSans-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DMSans-SemiBoldItalic';
+    src: url('./assets/fonts/DMSans-SemiBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'OswaldBold';
+    src: url('./assets/fonts/Oswald-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'PlayfairDisplay';
+    src: url('./assets/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+}
+
+
 * {
     box-sizing: border-box;
 }
@@ -11,7 +53,7 @@ body {
 
 html {
     background: #f2f2f2;
-    font-family: "Segoe UI", "Segoe UI Web (West European)", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+    font-family: "DMSans-Regular", "Segoe UI", "Segoe UI Web (West European)", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
