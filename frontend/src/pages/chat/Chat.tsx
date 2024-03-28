@@ -682,7 +682,19 @@ const Chat = () => {
                                     aria-hidden="true"
                                 />
                                 <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
-                                <h2 className={styles.chatEmptyStateSubtitle}>{ui?.chat_description}</h2>
+                                <h2 className={styles.chatEmptyStateSubtitle}>  
+                                {ui?.chat_description ? (
+                                    <>
+                                    {ui.chat_description}
+                                    </>
+                                ) : (
+                                    <>
+                                    This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
+                                    <a href="https://docs.google.com/document/d/1VTs09xtQziGbRNg-wHpTuJR7VBnATOujTtxrADG9g6s/edit#heading=h.avggyno8p6yk" target="_blank">Generative AI Guidance</a>
+                                    document before using this tool.
+                                    </>
+                                )}
+                                </h2>
                             </Stack>
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px" }} role="log">
