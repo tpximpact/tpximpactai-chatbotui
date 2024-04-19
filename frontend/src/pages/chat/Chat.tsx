@@ -859,7 +859,7 @@ const Chat = () => {
                                 openGuidance={openModal}
                             />
                         </Stack>
-                            <span style= {{display:'inline', position:'absolute', bottom:'5px', color:'white', fontSize:'14px'}}> 
+                            <span style= {{display:'inline', position:'absolute', bottom:'3px', color:'white', fontSize:'14px'}}> 
                                 Always fact-check responses thoroughly for accuracy and<a 
                                 href='#'
                                 onClick={ () => {

@@ -67,11 +67,11 @@ const GuideanceModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExamp
         <h2>This guidance is to help you safely use Generative AI technologies within your work. </h2>
       </div>
       <div className={styles.modalContent}>
-        <p>To find out more about generative AI please visit<a href="https://docs.google.com/presentation/d/1mWjx-UzA_rUSjVI3xTnG6U0lhyJ8ktix6awXOe8fFSM/edit?usp=sharing">Generative AI - Explainer.</a></p>
+        <p>To find out more about generative AI please visit<a href="https://docs.google.com/presentation/d/1mWjx-UzA_rUSjVI3xTnG6U0lhyJ8ktix6awXOe8fFSM/edit?usp=sharing" target='_blank'>Generative AI - Explainer.</a></p>
         
         <p>
-            This guidance, in line with our overarching<a href="https://drive.google.com/file/d/1z1OIfPO3kuyfQ6TalbaDb2Vv4ARYH9Rl/view">TPXimpact Information Technology, Security & Governance (ITSG) policy,</a> 
-            applies to all employees of TPXimpact and our contractor/associate community. This guidance is also aligned to the<a href="https://drive.google.com/file/d/1z1OIfPO3kuyfQ6TalbaDb2Vv4ARYH9Rl/view">UK Gov policy.</a>
+            This guidance, in line with our overarching<a href="https://drive.google.com/file/d/1z1OIfPO3kuyfQ6TalbaDb2Vv4ARYH9Rl/view" target='_blank'>TPXimpact Information Technology, Security & Governance (ITSG) policy,</a> 
+            applies to all employees of TPXimpact and our contractor/associate community. This guidance is also aligned to the<a href="https://drive.google.com/file/d/1z1OIfPO3kuyfQ6TalbaDb2Vv4ARYH9Rl/view" target='_blank'>UK Gov policy.</a>
         </p>
         
         <ul>
