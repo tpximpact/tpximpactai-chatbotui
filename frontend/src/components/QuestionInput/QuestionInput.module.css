@@ -60,3 +60,32 @@
         left: 16.5%;
     }
 }
+
+
+.modalContainer{
+    padding:5% 10%;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-family: 'PlayfairDisplay';
+    text-align: center;
+    align-self: center;
+    display:flex;
+    justify-content: center;
+
+}
+
+.modalContent {
+    font-family: "DMSans-Regular";
+}
+
+.closeBtn {
+    position: absolute;
+    top: 20px;
+    color: #000;
+    font-size: 18px;
+}

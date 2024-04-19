@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
-import { CommandBarButton, IconButton, Dialog, DialogType, Stack } from "@fluentui/react";
+import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal } from "@fluentui/react";
 import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
@@ -632,6 +632,26 @@ const Chat = () => {
         appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
     };
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const openModal = () => {
+      setIsModalOpen(true);
+    };
+  
+    const closeModal = () => {
+      setIsModalOpen(false);
+    };
+        
+
+    const [isHModalOpen, setIsHModalOpen] = useState(false);
+
+    const openHModal = () => {
+      setIsHModalOpen(true);
+    };
+  
+    const closeHModal = () => {
+      setIsHModalOpen(false);
+    };
 
     return (
         <div className={styles.container} role="main">
@@ -690,12 +710,16 @@ const Chat = () => {
                                 ) : (
                                     <>
                                     This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
-                                    <a href="https://docs.google.com/document/d/1VTs09xtQziGbRNg-wHpTuJR7VBnATOujTtxrADG9g6s/edit#heading=h.avggyno8p6yk" target="_blank">Generative AI Guidance</a>
+                                    <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
+                                    <p>
+                                    If you need any help or support then please use the<a href="https://tpximpact.slack.com/archives/C06RLPS8NH1" target='_blank'>#tpx_cop-ai</a>Slack channel.
+                                    </p>
                                     </>
                                 )}
                                 </h2>
                             </Stack>
+
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px" }} role="log">
                                 {messages.map((answer, index) => (
@@ -830,8 +854,49 @@ const Chat = () => {
                                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB ? makeApiRequestWithCosmosDB(question, id) : makeApiRequestWithoutCosmosDB(question, id)
                                 }}
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
+                                showGuidance={isModalOpen}
+                                closeGuidance={closeModal}
+                                openGuidance={openModal}
                             />
                         </Stack>
+                            <span style= {{display:'inline', position:'absolute', bottom:'5px', color:'white', fontSize:'14px'}}> 
+                                Always fact-check responses thoroughly for accuracy and<a 
+                                href='#'
+                                onClick={ () => {
+                                    setIsHModalOpen(true)
+                                }}
+                                style = {{
+                                    color:'gray'
+                                }}
+                                >hallucination.</a>
+                            </span>
+                            <Modal
+                                  styles= {{main: {borderRadius:'20px', width:'65%'} } }
+                                  isOpen={isHModalOpen}
+                                  onDismiss={closeHModal}
+                                  isBlocking={false}
+                            >
+                                <div style= {{padding:'5%'}}>        
+                                    <IconButton
+                                    
+                                        onMouseOver={undefined}
+                                        iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
+                                        ariaLabel="Close"
+                                        onClick={closeHModal}
+                                        styles={{ root: { position: 'absolute', top: '10px', right: '10px', borderRadius:'10px'} }}
+                                        />
+
+                                    <h3>
+                                        Hallucination in Gen AI
+                                    </h3>
+                                    <p>
+                                    Hallucination in Generative AI is when output can sometimes contain false or misleading information that is presented as fact.   
+                                    </p>
+                                    <p>
+                                    <strong>For example:</strong> you ask Generative AI to summarise specific sections within a document, if one of those sections doesn't exist in the document then Generative AI may make up the information and present it as if it is real.
+                                    </p>
+                                </div>
+                            </Modal>
                     </div>
                     {/* Citation Panel */}
                     {messages && messages.length > 0 && isCitationPanelOpen && activeCitation && (

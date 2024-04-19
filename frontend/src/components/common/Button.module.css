@@ -1,4 +1,45 @@
 .shareButtonRoot {
+    min-width: 110px;
+    height: 50px;
+    padding: 14px 22px;
+    border: 3px solid #141414;
+    border-bottom-width: 6px;
+    border-radius: 100px;
+    background-color: hsl(0, 0%, 100%);
+
+  }
+  
+  .purple:hover {
+    background-color: #e7d2ff;
+  }
+  .blue:hover {
+    background-color: #c8e9ff;
+  }
+  .green:hover {
+    background-color: #cafce5;
+  }
+  .salmon:hover {
+    background-color: #ffcfca;
+  }
+
+  
+  .shareButtonRoot span {
+    line-height: 20px;
+    color: hsl(0, 0%, 0%);
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+  }
+
+  .shareButtonRoot i, .shareButtonRoot:hover i {
+    color: #FFFFFF !important;
+  }
+
+
+
+
+  .tryitButtonRoot {
     width: 110px;
     height: 50px;
     padding: 14px 22px;
@@ -9,11 +50,7 @@
 
   }
   
-  .shareButtonRoot:hover {
-    background-color: #e7d2ff;
-  }
-  
-  .shareButtonRoot span {
+  .tryitButtonRoot span {
     line-height: 20px;
     color: hsl(0, 0%, 0%);
     font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
@@ -22,10 +59,14 @@
     line-height: 1.5rem;
   }
 
-  .shareButtonRoot i, .shareButtonRoot:hover i {
+  .tryitButtonRoot i, .tryitButtonRoot:hover i {
     color: #FFFFFF !important;
   }
   
+
+
+
+
   .historyButtonRoot {
     width: 180px;
     border: 1px solid #D1D1D1;

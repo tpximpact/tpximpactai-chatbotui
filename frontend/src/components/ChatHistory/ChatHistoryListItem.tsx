@@ -199,8 +199,22 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                             </Stack.Item>
                             {editTitle && (<Stack.Item>
                                 <Stack aria-label='action button group' horizontal verticalAlign={'center'}>
-                                    <IconButton role='button' disabled={errorRename !== undefined} onKeyDown={e => e.key === " " || e.key === 'Enter' ? handleSaveEdit(e) : null} onClick={(e) => handleSaveEdit(e)} aria-label='confirm new title' iconProps={{iconName: 'CheckMark'}} styles={{ root: { color: 'green', marginLeft: '5px' } }} />
-                                    <IconButton role='button' disabled={errorRename !== undefined} onKeyDown={e => e.key === " " || e.key === 'Enter' ? cancelEditTitle() : null} onClick={() => cancelEditTitle()} aria-label='cancel edit title' iconProps={{iconName: 'Cancel'}} styles={{ root: { color: 'red', marginLeft: '5px' } }} />
+                                    <IconButton 
+                                        role='button' 
+                                        disabled={errorRename !== undefined} 
+                                        onKeyDown={e => e.key === " " || e.key === 'Enter' ? handleSaveEdit(e) : null} 
+                                        onClick={(e) => handleSaveEdit(e)} 
+                                        aria-label='confirm new title' 
+                                        iconProps={{iconName: 'CheckMark'}} 
+                                        styles={{root: { color: 'green', marginLeft: '5px', borderRadius:'10px' } }} />
+                                    <IconButton 
+                                        role='button' 
+                                        disabled={errorRename !== undefined} 
+                                        onKeyDown={e => e.key === " " || e.key === 'Enter' ? cancelEditTitle() : null} 
+                                        onClick={() => cancelEditTitle()} 
+                                        aria-label='cancel edit title' 
+                                        iconProps={{iconName: 'Cancel'}} 
+                                        styles={{ root: { color: 'red', marginLeft: '5px', borderRadius:'10px' } }} />
                                 </Stack>
                             </Stack.Item>)}
                         </Stack>
@@ -213,8 +227,24 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                 <Stack horizontal verticalAlign={'center'} style={{ width: '100%' }}>
                     <div className={styles.chatTitle}>{truncatedTitle}</div>
                     {(isSelected || isHovered) && <Stack horizontal horizontalAlign='end'>
-                        <IconButton className={styles.itemButton} iconProps={{ iconName: 'Delete' }} title="Delete" onClick={toggleDeleteDialog} onKeyDown={e => e.key === " " ? toggleDeleteDialog() : null}/>
-                        <IconButton className={[styles.itemButton, styles.itemButton2].join(' ')} color='#141414' iconProps={{ iconName: 'Edit' }} title="Edit" onClick={onEdit} onKeyDown={e => e.key === " " ? onEdit() : null}/>
+                    <IconButton
+                        className={styles.itemButton}
+                        iconProps={{
+                            iconName: 'Delete',
+                        }}
+                        title="Delete"
+                        styles={{ root: {borderRadius:'10px'} }}
+
+                        onClick={toggleDeleteDialog}
+                        onKeyDown={e => e.key === " " ? toggleDeleteDialog() : null}
+                    />
+                    <IconButton 
+                        className={[styles.itemButton, styles.itemButton2].join(' ')} 
+                        color='#141414' iconProps={{ iconName: 'Edit' }} 
+                        title="Edit" 
+                        styles={{ root: {borderRadius:'10px'} }}
+                        onClick={onEdit} 
+                        onKeyDown={e => e.key === " " ? onEdit() : null}/>
                     </Stack>}
                 </Stack>
             </>

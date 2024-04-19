@@ -2,16 +2,26 @@ import { CommandBarButton, DefaultButton, IButtonProps, IconButton, Image} from 
 
 import styles from './Button.module.css';
 
+
+type Color = 'purple' | 'blue' | 'salmon' | 'green';
+
 interface ButtonProps extends IButtonProps {
   onClick: () => void;
   text: string | undefined;
+  color?: Color;
 }
 
-export const ShareButton: React.FC<ButtonProps> = ({ onClick, text }) => {
-
+export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple' }) => {
+  const colorStyles: Record<Color, string> = {
+    purple: styles.purple,
+    blue: styles.blue,
+    salmon: styles.salmon,
+    green: styles.green,
+  };
+  const buttonStyle = colorStyles[color];
   return (
     <CommandBarButton
-      className={styles.shareButtonRoot}
+      className={[styles.shareButtonRoot, buttonStyle].join(' ')}
       onClick={onClick}
       text={text}
     />

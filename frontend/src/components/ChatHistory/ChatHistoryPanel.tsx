@@ -22,6 +22,7 @@ const commandBarStyle: ICommandBarStyles = {
         display: 'flex',
         justifyContent: 'center',
         backgroundColor: 'transparent',
+        borderRadius:'15px'
     }
 };
 
