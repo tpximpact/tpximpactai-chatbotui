@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
+import React, { createContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { appStateReducer } from './AppReducer';
 import { Conversation, ChatHistoryLoadingState, CosmosDBHealth, historyList, historyEnsure, CosmosDBStatus, frontendSettings, FrontendSettings, Feedback } from '../api';
   
@@ -46,6 +46,9 @@ const initialState: AppState = {
 export const AppStateContext = createContext<{
     state: AppState;
     dispatch: React.Dispatch<Action>;
+    useCasesShowing: boolean;
+    openUseCases: () => void;
+    closeUseCases: () => void;
   } | undefined>(undefined);
 
 type AppStateProviderProps = {
@@ -54,6 +57,17 @@ type AppStateProviderProps = {
   
   export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) => {
     const [state, dispatch] = useReducer(appStateReducer, initialState);
+    const [useCasesShowing, setUseCasesShowing] = useState(false)
+
+    const openUseCases = () => {
+        setUseCasesShowing(true)
+    }
+
+    const closeUseCases = () => {
+        setUseCasesShowing(false)
+    }
+
+
 
     useEffect(() => {
         // Check for cosmosdb config and fetch initial data here
@@ -119,7 +133,13 @@ type AppStateProviderProps = {
     }, []);
   
     return (
-      <AppStateContext.Provider value={{ state, dispatch }}>
+      <AppStateContext.Provider value={{ 
+        state,
+       dispatch,
+       useCasesShowing,
+       openUseCases,
+       closeUseCases
+       }}>
         {children}
       </AppStateContext.Provider>
     );

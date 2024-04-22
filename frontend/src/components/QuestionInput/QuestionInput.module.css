@@ -61,7 +61,6 @@
     }
 }
 
-
 .modalContainer{
     padding:5% 10%;
 }
@@ -72,6 +71,7 @@
     align-items: center;
     margin-bottom: 10px;
     font-family: 'PlayfairDisplay';
+    font-size: larger;
     text-align: center;
     align-self: center;
     display:flex;
@@ -89,3 +89,23 @@
     color: #000;
     font-size: 18px;
 }
+
+.useCaseContainer {
+    flex-direction: row;
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid black;
+    padding: 15px 25px;
+    border-radius: 20px;
+    margin: 5px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .useCaseText {
+    padding-right: 5%;
+  }
+
+  .useCaseButtonContainer {
+    text-align: right;
+    margin-top: 10px;
+  }

@@ -41,6 +41,7 @@ import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel"
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
 import { HistoryArrowButton } from "../../components/common/Button";
+import GuideanceModal from "./GuidedanceModal";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -718,6 +719,11 @@ const Chat = () => {
                                     </>
                                 )}
                                 </h2>
+                                <GuideanceModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                    />
+
                             </Stack>
 
                         ) : (
@@ -854,9 +860,6 @@ const Chat = () => {
                                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB ? makeApiRequestWithCosmosDB(question, id) : makeApiRequestWithoutCosmosDB(question, id)
                                 }}
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
-                                showGuidance={isModalOpen}
-                                closeGuidance={closeModal}
-                                openGuidance={openModal}
                             />
                         </Stack>
                             <span style= {{display:'inline', position:'absolute', bottom:'3px', color:'white', fontSize:'14px'}}> 

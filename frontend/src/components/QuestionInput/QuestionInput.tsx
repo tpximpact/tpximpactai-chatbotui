@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Stack, TextField } from "@fluentui/react";
 import { SendRegular } from "@fluentui/react-icons";
 import Send from "../../assets/Send.svg";
 import styles from "./QuestionInput.module.css";
 import COLOURS from "../../constants/COLOURS";
-import GuideanceModal from "./GuidedanceModal";
+import { AppStateContext } from "../../state/AppProvider";
+import UseCaseModal from "./UseCaseModal";
 
 interface Props {
     onSend: (question: string, id?: string) => void;
@@ -12,14 +13,11 @@ interface Props {
     placeholder?: string;
     clearOnSend?: boolean;
     conversationId?: string;
-    showGuidance: boolean;
-    closeGuidance: () => void;
-    openGuidance: () => void;
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId, showGuidance, closeGuidance, openGuidance }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
     const [question, setQuestion] = useState<string>("");
-
+    const appStateContext = useContext(AppStateContext)
     const sendQuestion = () => {
         if (disabled || !question.trim()) {
             return;
@@ -37,9 +35,9 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     };
 
     const sendExampleQuestion = (questionText: string) => {
-        closeGuidance();
+        appStateContext!.closeUseCases();
         setTimeout(() => {
-            openGuidance();
+            appStateContext!.openUseCases();
         }, 5000);
         if(conversationId){
             onSend(questionText, conversationId);
@@ -63,11 +61,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
-             <GuideanceModal
-                isOpen={showGuidance}
-                onClose={closeGuidance}
+
+            <UseCaseModal
+                isOpen={appStateContext!.useCasesShowing}
+                onClose={appStateContext!.closeUseCases}
                 sendExampleQuestion={sendExampleQuestion}
-                    />
+                />
 
             <TextField
                 className={styles.questionInputTextArea}

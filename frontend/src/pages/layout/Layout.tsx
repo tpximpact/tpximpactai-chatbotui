@@ -15,14 +15,14 @@ const Layout = () => {
     const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false);
     const [copyClicked, setCopyClicked] = useState<boolean>(false);
     const [copyText, setCopyText] = useState<string>("Copy URL");
-    const [shareLabel, setShareLabel] = useState<string | undefined>("Share");
+    const [useCaseLabel, setUseCaseLabel] = useState<string | undefined>("Share");
     const [hideHistoryLabel, setHideHistoryLabel] = useState<string>("Hide chat history");
     const [showHistoryLabel, setShowHistoryLabel] = useState<string>("Show chat history");
     const appStateContext = useContext(AppStateContext)
     const ui = appStateContext?.state.frontendSettings?.ui;
 
-    const handleShareClick = () => {
-        setIsSharePanelOpen(true);
+    const handleUseCasesClick = () => {
+        appStateContext?.openUseCases();
     };
 
     const handleSharePanelDismiss = () => {
@@ -51,11 +51,11 @@ const Layout = () => {
     useEffect(() => {
         const handleResize = () => {
           if (window.innerWidth < 480) {
-            setShareLabel(undefined)
+            setUseCaseLabel(undefined)
             setHideHistoryLabel("Hide history")
             setShowHistoryLabel("Show history")
           } else {
-            setShareLabel("Share")
+            setUseCaseLabel("Examples")
             setHideHistoryLabel("Hide chat history")
             setShowHistoryLabel("Show chat history")
           }
@@ -82,7 +82,7 @@ const Layout = () => {
                         </Link>
                     </Stack>
                     <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
-                        {ui?.show_share_button &&<ShareButton onClick={handleShareClick} text={shareLabel} />}
+                        {ui?.show_share_button &&<ShareButton onClick={handleUseCasesClick} text={useCaseLabel} />}
                     </Stack>
                 </Stack>
             </header>
