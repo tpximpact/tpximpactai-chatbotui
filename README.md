@@ -44,6 +44,14 @@ Please see the [section below](#add-an-identity-provider) for important informat
 
 2. Start the app with `start.cmd`. This will build the frontend, install backend dependencies, and then start the app. Or, just run the backend in debug mode using the VSCode debug configuration in `.vscode/launch.json`.
 
+On mac use: 
+
+python -m uvicorn app:app --port 50505 --reload &
+
+cd frontend
+
+npm run build
+
 3. You can see the local running app at http://127.0.0.1:50505.
 
 #### Local Setup: Chat with your data (Preview)
