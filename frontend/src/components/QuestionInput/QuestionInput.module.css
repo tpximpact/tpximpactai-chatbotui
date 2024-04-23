@@ -90,6 +90,14 @@
     font-size: 18px;
 }
 
+.useCaseRowContainer {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    width: 100%;
+}
+
 .useCaseContainer {
     flex-direction: row;
     display: flex;
@@ -97,15 +105,32 @@
     border: 1px solid black;
     padding: 15px 25px;
     border-radius: 20px;
-    margin: 5px 0;
+    margin: 5px 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
+    width:20%;
+    transition: transform 0.2s ease; /* Add transition property */
+    cursor: pointer; 
+}
 
-  .useCaseText {
-    padding-right: 5%;
-  }
+.useCaseContainer:hover {
+  transform: scale(1.05); /* Apply scaling effect on hover */
+}
 
-  .useCaseButtonContainer {
-    text-align: right;
-    margin-top: 10px;
-  }
+
+.useCasePageContainer {
+    border: 1px solid black;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    padding: 15px 25px;
+
+}
+  
+
+.useCaseText {
+padding-right: 5%;
+}
+
+.useCaseButtonContainer {
+text-align: right;
+margin-top: 10px;
+}

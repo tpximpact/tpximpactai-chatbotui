@@ -714,7 +714,10 @@ const Chat = () => {
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>
-                                    If you need any help or support then please use the<a href="https://tpximpact.slack.com/archives/C06RLPS8NH1" target='_blank'>#tpx_cop-ai</a>Slack channel.
+                                    If you need any help, check out the examples (top right of the screen).
+                                    </p>
+                                    <p>
+                                    For any further support please use the<a href="https://tpximpact.slack.com/archives/C06RLPS8NH1" target='_blank'>#tpx_cop-ai</a>Slack channel.
                                     </p>
                                     </>
                                 )}
@@ -862,14 +865,14 @@ const Chat = () => {
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
                             />
                         </Stack>
-                            <span style= {{display:'inline', position:'absolute', bottom:'3px', color:'white', fontSize:'14px'}}> 
+                            <span style= {{display:'inline', position:'absolute', bottom:'21px', color:'black', fontSize:'14px'}}> 
                                 Always fact-check responses thoroughly for accuracy and<a 
                                 href='#'
                                 onClick={ () => {
                                     setIsHModalOpen(true)
                                 }}
                                 style = {{
-                                    color:'gray'
+                                    color:'blue'
                                 }}
                                 >hallucination.</a>
                             </span>
@@ -890,7 +893,7 @@ const Chat = () => {
                                         />
 
                                     <h3>
-                                        Hallucination in Gen AI
+                                        What is Hallucination in Gen AI?
                                     </h3>
                                     <p>
                                     Hallucination in Generative AI is when output can sometimes contain false or misleading information that is presented as fact.   

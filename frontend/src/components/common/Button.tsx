@@ -3,7 +3,7 @@ import { CommandBarButton, DefaultButton, IButtonProps, IconButton, Image} from 
 import styles from './Button.module.css';
 
 
-type Color = 'purple' | 'blue' | 'salmon' | 'green';
+type Color = 'purple' | 'blue' | 'salmon' | 'green' | 'random';
 
 interface ButtonProps extends IButtonProps {
   onClick: () => void;
@@ -11,12 +11,20 @@ interface ButtonProps extends IButtonProps {
   color?: Color;
 }
 
+function getRandomColor(): string {
+  const colors: Color[] = ['purple', 'blue', 'salmon', 'green'];
+  const randomIndex = Math.floor(Math.random() * colors.length);
+  return styles[colors[randomIndex]];
+}
+
+
 export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple' }) => {
   const colorStyles: Record<Color, string> = {
     purple: styles.purple,
     blue: styles.blue,
     salmon: styles.salmon,
     green: styles.green,
+    random: getRandomColor(),
   };
   const buttonStyle = colorStyles[color];
   return (

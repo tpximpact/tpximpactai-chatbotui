@@ -36,9 +36,6 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
 
     const sendExampleQuestion = (questionText: string) => {
         appStateContext!.closeUseCases();
-        setTimeout(() => {
-            appStateContext!.openUseCases();
-        }, 5000);
         if(conversationId){
             onSend(questionText, conversationId);
         }else{

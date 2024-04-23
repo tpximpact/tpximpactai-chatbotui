@@ -1,0 +1,69 @@
+{
+    "useCases":
+        [
+            {
+                "title": "Document Summary",
+                "subtitle": "You can get ImpactAI to condense blocks of text into just the key points.",
+                "content": "If you don't have the time to read a really long document, you can copy and paste it into the prompt box and ask for it to be summarised in a few paragraphs or even a number of bullet points.",
+                "note": "There's a limit to how long a prompt can be. To get round this, you can split large documents into chunks and put them in one by one.",
+                "example": "Here, we're going to summarise an article from the TPXimpact blog. First we instruct TPXimpactAI to create a summary. Then, in the same prompt, copy and paste the entire article.",
+                "prompt": "Create an executive summary of this article: \nWe're pleased to announce that The Trussell Trust has appointed us as their partner for digital transformation to help build a movement and meet the unprecedented need for their vital services. \n\nThe Trussell Trust is embarking on an exciting and ambitious transformation programme as the charity seeks to meet record demand for support. The programme will touch every part of the network, from people who access food banks, volunteers, and food bank teams on the ground to central teams, supporters and advocates. \n\nRecently published research and insights in the ‘Hunger in the UK’ report show that: “14% of all UK adults (or their households) have experienced food insecurity in the 12 months to mid-2022.” This means – at some point over this period – an estimated 11.3 million people have run out of food and been unable to afford more, and/or reduced meal size, eaten less, gone hungry or lost weight due to lack of money. \n\nTheir most recent statistical release showed that a record 540,000 emergency food parcels were provided to support more than 265,000 children across the UK between April and September 2023. Low incomes, especially from social security, debt, health conditions and issues with social security payments such as delays or sanctions, were the main reasons people had no option but to turn to a food bank for help. \n\nThe charity forecast that they will distribute more than 1,000,000 emergency food parcels across the UK this winter. \n\nAt every turn, The Trussell Trust sees the impact of economic uncertainty on their work, from decreasing food donations to soaring demand for emergency food aid. This partnership could not have come at a more important time, and digital will be vital in meeting these challenges. Teams will work with people who access food banks and local volunteers and staff to understand the needs in communities and translate this into digital support and solutions that help people not only access emergency food aid but also additional support to help move them out of poverty. \n\nCentral to The Trussell Trust’s organisational strategy is a commitment to build awareness and a movement for change to end hunger in the UK. This partnership will enable and empower teams to use digital channels and creativity to galvanise the general public and influential partners and reach the widest number of people. \n\nLouise Lai, Chief Client and Transformation Officer of TPXimpact, said: \n\"We couldn’t be more excited and proud to be joining The Trussell Trust as they embark on the next phase of their strategy and tackle, head-on, the grave challenges facing those in crisis right now. Digital is a huge driver and enabler for change and impact. We’ll be working together to reimagine digital experiences with a focus on outcomes, connecting every part of the digital ecosystem and helping to mobilise teams and audiences to support their mission to end hunger in the UK. \n\nThe understanding, commitment, expertise and passion from everyone we’ve met has been incredible. This cause is close to so many of our team's values, and it is humbling and motivating for us all to tackle these challenges. We have an opportunity to work in a genuinely agile way, to deliver impact iteratively, innovate with our platforms and create a user-centred experience led by the data and insights on where help, information, support, influence and impact will matter the most.\" \n\nSophie Carre, Director of Public Engagement of The Trussell Trust, said: \n\"As our food banks provide more emergency food parcels and support than ever, there has never been a more important time for us to accelerate our digital transformation. Delivering seamless digital experiences across our network of food banks to support those facing hardship and engage and mobilise people to pursue our vision to end hunger in the UK. \n\nWe’re thrilled to be partnering with TPXimpact, who, from the beginning, have demonstrated their immense expertise and experience, alignment with our values, and passion for putting food banks at the heart of our digital strategy. The enthusiasm, adaptability and strategic thinking of the team is a huge asset to our work and achieving our strategic goals.\""
+            },
+            {
+                "title": "Textual Analysis",
+                "subtitle": "If you need more than a summary, you can use TPXimpactAI to anaylse a document.",
+                "content": "Generative AI can extract a certain amount of meaning from text, providing more than just a basic summary. Use it to quickly gain understanding of a document, or just a fresh perspective.",
+                "example": "You can give it the instruction to analyse, then copy and paste a document in the same prompt. See the example below where we analyse a bid response.",
+                "prompt": "Analyse this bid response:"
+            },
+            {
+                "title": "Produce a Case Study",
+                "subtitle": "Quickly generate a case study on any topic.",
+                "content": "TPXimpactAI can investigate a particular topic for you and present you with a case study! This can be good for inital understanding, or to use as a template for a new project.",
+                "example": "Let's ask it to produce a case study on the use of genAI tools in workplaces.",
+                "prompt": "Produce a case study on the use of genAI tools in workplaces"
+            },
+            {
+                "title": "New Ideas",
+                "subtitle": "Ask TPXimpactAI to brainstorm some ideas for you.",
+                "content": "Generative AI can useful when you've got writer's block. It won't always come out with something completely new, but it may surprise you.",
+                "example": "We can ask it to generate some business ideas on a specefic topic:",
+                "prompt": "Generate 5 business ideas involving rubber ducks and elderly people"
+            },
+            {
+                "title": "Explain complex topics",
+                "subtitle": "TPXimpactAI can be an effective teacher.",
+                "content": "You can ask TPXimpactAI to teach you about topic, you can even use to give you a plan to improve your competency in a given area.",
+                "example": "Here we ask it to explain Agile is, and specify that we'd like it explained as if we were 10, indicating what level of detail we want it to go into.",
+                "prompt": "Explain Agile methodology as if I was a 10 year old."
+            },
+            {
+                "title": "Create example text",
+                "subtitle": "Lorem Ipsum is out, use AI to generate more realistic sample text.",
+                "content": "Sometimes you need large blocks of test to fill a website for testing, or to flesh out a prototype. Either way, TPXimpactAI can be used to create sample text that closer to the actual text that will be used.",
+                "example": "Let's ask it to generate some example text for the TPXimpact website:",
+                "prompt": "Generate some example text for the TPXimpact website"
+            },
+            {
+                "title": "Write an Excel forumula",
+                "subtitle": "We won't tell anyone you used AI.",
+                "content": "Excel formulas can speed up workflows untold amounts. You can copy and paste cells into your prompt, and TPXimpactAI will understand.",
+                "example": "We can copy and paste some sample data in, along with an instruction to create a formula to find the average age, specifying that it is an excel document.",
+                "prompt": "Give me a forumula for the average age in my excel document: \n 0\tFirst Name\tLast Name\tGender\tCountry\tAge\tDate\tId\n1\tDulce\tAbril\tFemale\tUnited States\t32\t15/10/2017\t1562\n2\tMara\tHashimoto\tFemale\tGreat Britain\t25\t16/08/2016\t1582\n3\tPhilip\tGent\tMale\tFrance\t36\t21/05/2015\t2587\n4\tKathleen\tHanner\tFemale\tUnited States\t25\t15/10/2017\t3549\n5\tNereida\tMagwood\tFemale\tUnited States\t58\t16/08/2016\t2468\n6\tGaston\tBrumm\tMale\tUnited States\t24\t21/05/2015\t2554\n7\tEtta\tHurn\tFemale\tGreat Britain\t56\t15/10/2017\t3598\n8\tEarlean\tMelgar\tFemale\tUnited States\t27\t16/08/2016\t2456\n9\tVincenza\tWeiland\tFemale\tUnited States\t40\t21/05/2015\t6548"
+            },
+            {
+                "title": "Annotate or Explain Code",
+                "subtitle": "AI can be really effective at explaining code and adding comments to explain it.",
+                "content": "One of the things AI can do consistently well is understand code. Use it to quickly understand what's going on, or convert the code into a language you prefer.",
+                "example": "Here we're using it to add explanatory comments to the code by telling it specifically how to respond.",
+                "prompt": "annotate each line of the following code, respond with the code and it's annotations as comments:\nconst UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExampleQuestion }) => {\n <div className={styles.modalHeader}>\n <h2 style={{ textAlign: 'center' }}>9 TPXimpactAI Uses For You To Try</h2>\n </div>"
+            },
+            {
+                "title": "Debug Code",
+                "subtitle": "You can use TPXimpactAI to find and squash bugs.",
+                "content": "AI can sometimes pick up things we can't see, or make improvements we didn't think about. It's sometimes worth as a first pass throwing the problem at it to see what it can come up with.",
+                "example": "Here we ask it one of coding's classic conundrums, how to center a div. We copy and paste our code along with the question:",
+                "prompt": "Why is this div not centered?\n<div className={styles.modalHeader}>\n <h2>9 TPXimpactAI Uses For You To Try</h2>\n</div>"
+            }
+        ]
+}
