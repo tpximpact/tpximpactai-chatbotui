@@ -714,10 +714,10 @@ const Chat = () => {
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>
-                                    If you need any help, check out the examples (top right of the screen).
+                                    If you need any help, check out the examples at top right.
                                     </p>
                                     <p>
-                                    For any further support please use the<a href="https://tpximpact.slack.com/archives/C06RLPS8NH1" target='_blank'>#tpx_cop-ai</a>Slack channel.
+                                    For any further support please use the Slack channel<a href="https://tpximpact.slack.com/archives/C06RLPS8NH1" target='_blank'>#tpx_cop-ai</a>
                                     </p>
                                     </>
                                 )}

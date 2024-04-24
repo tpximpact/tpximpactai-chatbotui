@@ -57,11 +57,11 @@ const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, s
         <p>{data.content}
         {data.note && <><br /><strong>Note:</strong> {data.note}</>}
         </p>
-        <p><strong>Example usage</strong></p>
+        <p><strong>Example prompt</strong></p>
         <p style = {{paddingBottom:"10px"}}>{data.example}</p>
       </div>
 
-      <div style={{marginTop:'auto', marginBottom:'2%'}}>
+      <div style={{marginTop:'auto', marginBottom:'-30px'}}>
 
         <ShareButton
           onClick={() => {
@@ -117,11 +117,11 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
           className={styles.closeButton} // Apply custom CSS class for close button
         />
       <div className={styles.modalHeader}>
-        <h2 style={{ textAlign: 'center' }}> Some Uses For TPXimpactAI That You Can Try</h2>
+        <h2 style={{ textAlign: 'center' }}> Some Uses For ImpactAI That You Can Try</h2>
       </div>
       <div className={styles.modalContent}>
 
-        <h3 style={{padding:'15px 0px 5px 0px'}}>AI can be a powerful tool. To get the most out of it, you should phrase your questions (prompts) a little diferently than you would normally. 
+        <h3 style={{padding:'15px 0px 5px 0px'}}>AI can be a powerful tool. To get the most out of it, you should phrase your questions (prompts) a little differently than you would normally. 
         <br />
         <br />
         Here are some things it's good at, click on a bubble to learn more:
@@ -131,10 +131,10 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
    
         {
           page === -1 ? (
-            chunkArray(useCaseData.useCases, 5).map((row, rowIndex) => (
+            chunkArray(useCaseData.useCases, 4).map((row, rowIndex) => (
               <div key={`row-${rowIndex}`} className={styles.useCaseRowContainer}>
               {row.map((data: any, cardIndex: number) => (
-                <UseCaseCard key={`card-${rowIndex}-${cardIndex}`} questionNum={rowIndex * 5 + cardIndex} setPage={setPage} />
+                <UseCaseCard key={`card-${rowIndex}-${cardIndex}`} questionNum={rowIndex * 4 + cardIndex} setPage={setPage} />
               ))}
             </div>
           ))
@@ -143,21 +143,29 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
         )}
 
         </div>
-        {/* <p>
-            <strong>Remember:</strong> Always check your responses for mistakes and hallucinations. If in doubt, don't hesitate to challenge the response or ask for clarifications. TPXimpactAI can provide additional context or elaborate on its answers.
-        </p> */}
-        <div style={{ textAlign: 'center' , marginBottom:'30px', marginTop:'30px'}}>
+          <div style={{ textAlign: 'center' , marginBottom:'30px', marginTop:'30px'}}>
+          {
+          page === -1 ? (
+            <ShareButton
+              onClick={() => {
+                onClose()
+              }}
+              text="Close"
+              color="random"
+            />
+          ):(
+            <ShareButton
+              onClick={() => {
+                setPage(-1)
+              }}
+              text="Go Back"
+              color="random"
+            />
+          )}
 
-        <ShareButton
-          onClick={() => {
-            onClose()
-          }}
-          text="Get started"
-          color="random"
-        />
+          </div>
+        </div>
       </div>
-      </div>
-    </div>
     
     </Modal>
   );
