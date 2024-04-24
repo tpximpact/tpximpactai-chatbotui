@@ -36,8 +36,8 @@
                 "subtitle": "Lorem Ipsum is out, use AI to generate more realistic sample text.",
                 "content": "Sometimes you need large blocks of text to fill a website for testing, or to flesh out a prototype. Either way, ImpactAI can be used to create sample text that is closer to the actual text that will be used. For example, we can ask it for a 200 word section for our website, then give it some context about our company.",
                 "note": "Generative AI isn't very good at counting words or letters, so don't expect it to be exact when it comes to word counts.",
-                "example": "We need some example text for our \"About Us\" section on our new website.   In less than 200 words can you generate an example \"About Us\" section of a typical pet rescue charity based in the north east of England.\nWe have 20 employees and rescue 250 pets every year.",
-                "prompt": "We need some example text for our \"About Us\" section on our new website.   In less than 200 words can you generate an example \"About Us\" section of a typical pet rescue charity based in the north east of England. We have 20 employees and rescue 250 pets every year."
+                "example": "I need some example text for an \"About Us\" section on a new website.   In less than 200 words can you generate an example \"About Us\" section of a typical pet rescue charity called \"Pet Safe\" based in the north east of England.\nThey have 20 employees and rescue 250 pets every year.",
+                "prompt": "I need some example text for an \"About Us\" section on a new website.   In less than 200 words can you generate an example \"About Us\" section of a typical pet rescue charity called \"Pet Safe\" based in the north east of England.\nThey have 20 employees and rescue 250 pets every year."
             },
             {
                 "title": "Write an Excel formula",
