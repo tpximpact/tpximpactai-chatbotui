@@ -33,7 +33,7 @@
       {
         "title": "Write an Excel formula",
         "subtitle": "We won't tell anyone you used AI.",
-        "content": "Excel formulas can speed up workflows untold amounts. You can copy and paste cells into your prompt and ask it to do work something out, as we're doing in the example.<br/><br/><strong>Note: </strong>Your cells might look a bit weird in the prompt box, but don't worry, it will understand.<br/><br/><strong>Example prompt</strong><br/><br/>Give me a formula for the average age in my excel document: [copy and paste your cells in here]",
+        "content": "Excel formulas can speed up workflows. You can copy and paste cells into your prompt and ask it to do work something out, as we're doing in the example.<br/><br/><strong>Note: </strong>Your cells might look a bit weird in the prompt box, but don't worry, it will understand.<br/><br/><strong>Example prompt</strong><br/><br/>Give me a formula for the average age in my excel document: [copy and paste your cells in here]",
         "prompt": "Give me a forumula for the average age in my excel document: \n 0\tFirst Name\tLast Name\tGender\tCountry\tAge\tDate\tId\n1\tDulce\tAbril\tFemale\tUnited States\t32\t15/10/2017\t1562\n2\tMara\tHashimoto\tFemale\tGreat Britain\t25\t16/08/2016\t1582\n3\tPhilip\tGent\tMale\tFrance\t36\t21/05/2015\t2587\n4\tKathleen\tHanner\tFemale\tUnited States\t25\t15/10/2017\t3549\n5\tNereida\tMagwood\tFemale\tUnited States\t58\t16/08/2016\t2468\n6\tGaston\tBrumm\tMale\tUnited States\t24\t21/05/2015\t2554\n7\tEtta\tHurn\tFemale\tGreat Britain\t56\t15/10/2017\t3598\n8\tEarlean\tMelgar\tFemale\tUnited States\t27\t16/08/2016\t2456\n9\tVincenza\tWeiland\tFemale\tUnited States\t40\t21/05/2015\t6548"
       },
       {
