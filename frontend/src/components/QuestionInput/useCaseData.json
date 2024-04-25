@@ -39,7 +39,7 @@
       {
         "title": "Explain Code",
         "subtitle": "AI can explain code and can even add annotations.",
-        "content": "One of the things AI can do consistently well is understand code. Use it to quickly understand what's going on, or convert the code into a language you prefer.<br/><br/>Here we're using it to add explanatory comments to the code by telling it specifically how to respond.<br/><br/><strong>Note: </strong>Remember to specify the language/framework you are using as code snippets can sometimes be hard to differentiate.<br/><br/><strong>Example prompt</strong><br/><br/>Annotate each line of the following React code, respond with the code and it's annotations as comments: [copy and paste your code here]",
+        "content": "One of the things AI can do consistently well is understand code. Use it to quickly understand what's going on, or convert the code into a language you prefer.<br/>Here we're using it to add explanatory comments to the code by telling it specifically how to respond.<br/><br/><strong>Note: </strong>Remember to specify the language/framework you are using as code snippets can sometimes be hard to differentiate.<br/><br/><strong>Example prompt</strong><br/><br/>Annotate each line of the following React code, respond with the code and it's annotations as comments: [copy and paste your code here]",
         "prompt": "Annotate each line of the following React code, respond with the code and it's annotations as comments:\nconst UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExampleQuestion }) => {\n <div className={styles.modalHeader}>\n <h2 style={{ textAlign: 'center' }}>9 ImpactAI Uses For You To Try</h2>\n </div>"
       },
       {
