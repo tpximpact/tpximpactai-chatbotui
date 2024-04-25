@@ -108,7 +108,7 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
   }
   return (
     <Modal
-    styles= {{ root: {overflowY: 'hidden'}, main: {borderRadius:'20px', width: '90%', height:'90%',overflowY: 'hidden'} } }
+    styles= {{ root: {overflowY: 'hidden'}, main: {borderRadius:'20px', width: '90%', height:'90%',overflowY: 'hidden'}, scrollableContent: {overflowY:'scroll'}} }
       isOpen={isOpen}
       onDismiss={onClose}
       isBlocking={false}
