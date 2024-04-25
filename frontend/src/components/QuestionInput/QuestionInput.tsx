@@ -3,7 +3,6 @@ import { Stack, TextField } from "@fluentui/react";
 import { SendRegular } from "@fluentui/react-icons";
 import Send from "../../assets/Send.svg";
 import styles from "./QuestionInput.module.css";
-import COLOURS from "../../constants/COLOURS";
 import { AppStateContext } from "../../state/AppProvider";
 import UseCaseModal from "./UseCaseModal";
 

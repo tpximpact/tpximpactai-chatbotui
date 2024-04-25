@@ -3,6 +3,8 @@ import { Modal, IconButton, Button } from '@fluentui/react';
 import styles from './QuestionInput.module.css'; // Import custom CSS styles for the modal
 import { ShareButton } from '../common/Button';
 import useCaseData from './useCaseData.json'
+import useCasesData from './useCasesData.json'
+
 
 // Define Props for Modal Component
 interface CustomModalProps {
@@ -18,6 +20,7 @@ interface UseCaseProps {
 
 const UseCaseCard: React.FC<UseCaseProps> = ({ questionNum, setPage }) => {
   const data = useCaseData.useCases[questionNum];
+  
   return (
     <div className={styles.useCaseContainer} onClick={() => setPage(questionNum)}>
       <p className={styles.useCaseText}>
@@ -36,10 +39,10 @@ interface UseCasePageProps extends UseCaseProps {
 }
 
 const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, setPage, sendExampleQuestion}) => {
-  const data = useCaseData.useCases[questionNum];
+  const data = useCasesData.useCases[questionNum];
   console.log(height)
   return (
-    <div className={styles.useCasePageContainer} style={{height: height, justifyContent:'space-between', alignContent:'space-between', display:'flex', flexDirection:'column'}}>
+    <div className={styles.useCasePageContainer} style={{justifyContent:'space-between', alignContent:'space-between', display:'flex', flexDirection:'column'}}>
 
       <div>
 
@@ -54,14 +57,18 @@ const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, s
               />
           <h2>{data.title}</h2>
         </div>
-        <p>{data.content}
+
+        <div dangerouslySetInnerHTML={{ __html: data.content }}>
+
+        </div>
+        {/* <p>{data.content}
         {data.note && <><br /><strong>Note:</strong> {data.note}</>}
         </p>
         <p><strong>Example prompt</strong></p>
-        <p style = {{paddingBottom:"10px"}}>{data.example}</p>
+        <p style = {{paddingBottom:"10px"}}>{data.example}</p> */}
       </div>
 
-      <div style={{marginTop:'auto', marginBottom:'-30px'}}>
+      <div style={{marginTop:'30px', marginBottom:'25px'}}>
 
         <ShareButton
           onClick={() => {
