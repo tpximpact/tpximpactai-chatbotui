@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Modal, IconButton, Button } from '@fluentui/react';
 import styles from './QuestionInput.module.css'; // Import custom CSS styles for the modal
 import { ShareButton } from '../common/Button';
-import useCaseData from './useCaseData.json'
-import useCasesData from './useCasesData.json'
+import useCaseData from './useCasesData.json'
 
 
 // Define Props for Modal Component
@@ -39,7 +38,7 @@ interface UseCasePageProps extends UseCaseProps {
 }
 
 const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, setPage, sendExampleQuestion}) => {
-  const data = useCasesData.useCases[questionNum];
+  const data = useCaseData.useCases[questionNum];
   console.log(height)
   return (
     <div className={styles.useCasePageContainer} style={{justifyContent:'space-between', alignContent:'space-between', display:'flex', flexDirection:'column'}}>
