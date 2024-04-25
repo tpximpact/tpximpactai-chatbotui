@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Modal, IconButton, Button } from '@fluentui/react';
 import styles from './QuestionInput.module.css'; // Import custom CSS styles for the modal
 import { ShareButton } from '../common/Button';
-import useCaseData from './useCasesData.json'
+import useCaseData from './useCaseData.json'
 
 
 // Define Props for Modal Component
