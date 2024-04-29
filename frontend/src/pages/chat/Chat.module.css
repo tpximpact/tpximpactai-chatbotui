@@ -196,6 +196,22 @@
     z-index: 1;
 }
 
+.documentSummaryIcon {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    left: 7px;
+    top: 13px;
+    color: #FFFFFF;
+    border-radius: 15px;
+    z-index: 1;
+}
+
 .stopGeneratingContainer {
     box-sizing: border-box;
     display: flex;
@@ -351,34 +367,4 @@ a {
         line-height: 36px;
     }
 
-}
-
-
-  
-.modalContainer{
-    padding:5% 10%;
-}
-
-.modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-family: 'PlayfairDisplay';
-    text-align: center;
-    align-self: center;
-    display:flex;
-    justify-content: center;
-
-}
-
-.modalContent {
-    font-family: "DMSans-Regular";
-}
-
-.closeBtn {
-    position: absolute;
-    top: 20px;
-    color: #000;
-    font-size: 18px;
 }

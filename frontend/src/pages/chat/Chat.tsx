@@ -41,7 +41,8 @@ import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel"
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
 import { HistoryArrowButton } from "../../components/common/Button";
-import GuideanceModal from "./GuidedanceModal";
+import GuideanceModal from "../../components/GuidanceModal/GuidedanceModal";
+import DocumentSummaryModal from "../../components/DocumentSummary/DocumentSummaryModal";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -654,6 +655,16 @@ const Chat = () => {
       setIsHModalOpen(false);
     };
 
+    const [isDocSumModalOpen, setIsDocSumModalOpen] = useState(false);
+
+    const openDocSumModal = () => {
+      setIsDocSumModalOpen(true);
+    };
+
+    const closeDocSumModal = () => {
+      setIsDocSumModalOpen(false);
+    };
+
     return (
         <div className={styles.container} role="main">
             {showAuthMessage ? (
@@ -814,12 +825,12 @@ const Chat = () => {
                                         }
                                     }}
                                     className={styles.newChatIcon}
-                                    iconProps={{ iconName: 'Add' }}
+                                    iconProps={{ iconName: 'SingleColumnEdit' }}
                                     onClick={newChat}
                                     disabled={disabledButton()}
                                     aria-label="start a new chat button"
                                 />}
-                                <CommandBarButton
+                                {/* <CommandBarButton
                                     role="button"
                                     styles={{
                                         icon: {
@@ -846,6 +857,34 @@ const Chat = () => {
                                     onClick={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? clearChat : newChat}
                                     disabled={disabledButton()}
                                     aria-label="clear chat button"
+                                /> */}
+                                <CommandBarButton
+                                    role="button"
+                                    styles={{
+                                        icon: {
+                                            color: 'black',
+                                        },
+                                        iconHovered: {
+                                            color: 'black',
+                                        },
+                                        iconDisabled: {
+                                            color: "#BDBDBD !important",
+                                        },
+                                        root: {
+                                            background: "#F0F0F0"
+                                        },
+                                        rootHovered: {
+                                            background: '#ffcfca',
+                                        },
+                                        rootDisabled: {
+                                            background: "#F0F0F0"
+                                        }
+                                    }}
+                                    className={styles.documentSummaryIcon}
+                                    iconProps={{ iconName: 'BulkUpload' }}
+                                    onClick={openDocSumModal}
+                                    disabled={false}
+                                    aria-label="document summary button"
                                 />
                                 <Dialog
                                     hidden={hideErrorDialog}
@@ -854,6 +893,11 @@ const Chat = () => {
                                     modalProps={modalProps}
                                 >
                                 </Dialog>
+                                <DocumentSummaryModal
+                isOpen={isDocSumModalOpen}
+                onClose={closeDocSumModal}
+                    />
+
                             </Stack>
                             <QuestionInput
                                 clearOnSend
@@ -868,9 +912,7 @@ const Chat = () => {
                             <span style= {{display:'inline', position:'absolute', bottom:'21px', color:'black', fontSize:'14px'}}> 
                                 Always fact-check responses thoroughly for accuracy and<a 
                                 href='#'
-                                onClick={ () => {
-                                    setIsHModalOpen(true)
-                                }}
+                                onClick={openHModal}
                                 style = {{
                                     color:'blue'
                                 }}
