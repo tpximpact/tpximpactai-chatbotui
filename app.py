@@ -20,6 +20,11 @@ from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
+configure_azure_monitor()
+
+
 from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
