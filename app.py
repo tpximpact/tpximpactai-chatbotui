@@ -20,7 +20,10 @@ from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
-
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+tracer = trace.get_tracer(__name__)
 
 from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
 
@@ -679,25 +682,26 @@ async def update_conversation():
             
         ## Format the incoming message object in the "chat/completions" messages format
         ## then write it to the conversation history in cosmos
-        messages = request_json["messages"]
-        if len(messages) > 0 and messages[-1]['role'] == "assistant":
-            if len(messages) > 1 and messages[-2].get('role', None) == "tool":
-                # write the tool message first
+        with tracer.start_as_current_span(name="tpximpact-webapp-conversation-update"):
+            messages = request_json["messages"]
+            if len(messages) > 0 and messages[-1]['role'] == "assistant":
+                if len(messages) > 1 and messages[-2].get('role', None) == "tool":
+                    # write the tool message first
+                    await cosmos_conversation_client.create_message(
+                        uuid=str(uuid.uuid4()),
+                        conversation_id=conversation_id,
+                        user_id=user_id,
+                        input_message=messages[-2]
+                    )
+                # write the assistant message
                 await cosmos_conversation_client.create_message(
-                    uuid=str(uuid.uuid4()),
+                    uuid=messages[-1]['id'],
                     conversation_id=conversation_id,
                     user_id=user_id,
-                    input_message=messages[-2]
+                    input_message=messages[-1]
                 )
-            # write the assistant message
-            await cosmos_conversation_client.create_message(
-                uuid=messages[-1]['id'],
-                conversation_id=conversation_id,
-                user_id=user_id,
-                input_message=messages[-1]
-            )
-        else:
-            raise Exception("No bot messages found")
+            else:
+                raise Exception("No bot messages found")
         
         # Submit request to Chat Completions for response
         await cosmos_conversation_client.cosmosdb_client.close()
