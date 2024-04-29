@@ -22,7 +22,7 @@ from backend.history.cosmosdbservice import CosmosConversationClient
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
-configure_azure_monitor()
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 
 
 from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
