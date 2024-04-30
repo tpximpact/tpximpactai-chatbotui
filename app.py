@@ -603,12 +603,12 @@ counter = meter.create_counter("counter")
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
-            track_event("Delete-convo", {"track_event": "New message"})
-            if not request.is_json:
-                return jsonify({"error": "request must be json"}), 415
-            request_json = await request.get_json()
-        
-            return await conversation_internal(request_json)
+
+    if not request.is_json:
+        return jsonify({"error": "request must be json"}), 415
+    request_json = await request.get_json()
+
+    return await conversation_internal(request_json)
 
 @bp.route("/frontend_settings", methods=["GET"])  
 def get_frontend_settings():
@@ -675,6 +675,7 @@ async def add_conversation():
 async def update_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
+    track_event("New-message", {"user": user_id, "key2": "value2"})
 
     ## check request for conversation_id
     request_json = await request.get_json()
@@ -756,6 +757,7 @@ async def delete_conversation():
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
+    track_event("Delete-convo", {"user": user_id, "key2": "value2"})
     
     ## check request for conversation_id
     request_json = await request.get_json()
