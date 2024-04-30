@@ -25,6 +25,8 @@ from azure.monitor.events.extension import track_event
 
 from opentelemetry import trace
 from opentelemetry import metrics
+
+
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 from opentelemetry.trace import SpanKind
 tracer = trace.get_tracer(__name__)
@@ -601,14 +603,12 @@ counter = meter.create_counter("counter")
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
-    counter.add(1.0, {"test_key": "test_value"})
-    with tracer.start_as_current_span(name="tpximpact-webapp-conversation-update") as span:
-
-        if not request.is_json:
-            return jsonify({"error": "request must be json"}), 415
-        request_json = await request.get_json()
-    
-        return await conversation_internal(request_json)
+            track_event("Delete-convo", {"track_event": "New message"})
+            if not request.is_json:
+                return jsonify({"error": "request must be json"}), 415
+            request_json = await request.get_json()
+        
+            return await conversation_internal(request_json)
 
 @bp.route("/frontend_settings", methods=["GET"])  
 def get_frontend_settings():
@@ -756,7 +756,6 @@ async def delete_conversation():
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
-    track_event("Delete-convo", {"user": user_id, "key2": "value2"})
     
     ## check request for conversation_id
     request_json = await request.get_json()
