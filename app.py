@@ -21,14 +21,20 @@ from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
 from azure.monitor.opentelemetry import configure_azure_monitor
+from azure.monitor.events.extension import track_event
+
 from opentelemetry import trace
-configure_azure_monitor()
+from opentelemetry import metrics
+
+
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+from opentelemetry.trace import SpanKind
+tracer = trace.get_tracer(__name__)
+
 
 from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
-
-
 
 # Current minimum Azure OpenAI version supported
 MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION="2024-02-15-preview"
@@ -37,7 +43,7 @@ MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION="2024-02-15-preview"
 UI_TITLE = os.environ.get("UI_TITLE")
 UI_LOGO = os.environ.get("UI_LOGO")
 UI_CHAT_LOGO = os.environ.get("UI_CHAT_LOGO")
-UI_CHAT_TITLE = os.environ.get("UI_CHAT_TITLE") or "Welcome to ImpactAI DEV"
+UI_CHAT_TITLE = os.environ.get("UI_CHAT_TITLE") or "Welcome to ImpactAI"
 UI_CHAT_DESCRIPTION = os.environ.get("UI_CHAT_DESCRIPTION")
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
@@ -592,13 +598,16 @@ async def conversation_internal(request_body):
             return jsonify({"error": str(ex)}), 500
 
 
+meter = metrics.get_meter_provider().get_meter("otel_azure_monitor_counter_demo")
+counter = meter.create_counter("counter")
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
+
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
-    
+
     return await conversation_internal(request_json)
 
 @bp.route("/frontend_settings", methods=["GET"])  
@@ -743,6 +752,7 @@ async def update_message():
 
 @bp.route("/history/delete", methods=["DELETE"])
 async def delete_conversation():
+
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
