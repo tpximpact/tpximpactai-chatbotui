@@ -287,7 +287,7 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
         setSelectedItem(item)
     }
   }
-
+  console.log('GROUPED CHAT HISTORY:', groupedChatHistory)
   const onRenderCell = (item?: Conversation) => {
     return (
       <ChatHistoryListItemCell item={item} onSelect={() => handleSelectHistory(item)} />
@@ -308,13 +308,17 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
         setShowSpinner(true);
 
         await historyList(offset).then((response) => {
+            console.log('FETCHED HISTORY1:', response)
             const concatenatedChatHistory = currentChatHistory && response && currentChatHistory.concat(...response)
+            console.log('FETCHED HISTORY2:', response)
+
             if (response) {
                 appStateContext?.dispatch({ type: 'FETCH_CHAT_HISTORY', payload: concatenatedChatHistory || response });
             } else {
                 appStateContext?.dispatch({ type: 'FETCH_CHAT_HISTORY', payload: null });
             }
             setShowSpinner(false);
+            console.log('FETCHED HISTORY:', response)
             return response
         })
     }

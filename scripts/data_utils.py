@@ -1062,3 +1062,25 @@ class SingletonFormRecognizerClient:
     def __setstate__(self, state):
         url, key = state
         self.instance = DocumentAnalysisClient(endpoint=url, credential=AzureKeyCredential(key), headers={"x-ms-useragent": "sample-app-aoai-chatgpt/1.0.0"})
+
+
+def chunkString(text, chunk_size,overlap):
+    encoding = tiktoken.get_encoding("cl100k_base")
+    tokens = encoding.encode(text)
+
+    print('NUMBER OF TOKENS', len(tokens))
+
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        separators=SENTENCE_ENDINGS + WORDS_BREAKS,
+        chunk_size=chunk_size, chunk_overlap=overlap)
+    chunked_content_list = splitter.split_text(text)
+    print('NUMBER OF CHUNKS', len(chunked_content_list))
+    print('TOKENS IN FIRST CHUNK', len(encoding.encode(chunked_content_list[0])))
+
+    return chunked_content_list
+
+
+def estimateTokens(text):
+    encoding = tiktoken.get_encoding("cl100k_base")
+    tokens = encoding.encode(text)
+    return len(tokens)

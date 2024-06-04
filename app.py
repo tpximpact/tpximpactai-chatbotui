@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import json
 import os
@@ -8,6 +9,7 @@ from dotenv import load_dotenv
 from quart import (
     Blueprint,
     Quart,
+    websocket,
     jsonify,
     make_response,
     request,
@@ -25,6 +27,8 @@ from azure.monitor.events.extension import track_event
 
 from opentelemetry import trace
 from opentelemetry import metrics
+
+from scripts.data_utils import chunkString, estimateTokens
 
 
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
@@ -651,7 +655,8 @@ async def add_conversation():
                 uuid=str(uuid.uuid4()),
                 conversation_id=conversation_id,
                 user_id=user_id,
-                input_message=messages[-1]
+                input_message=messages[-1],
+                hidden=messages[-1]['hidden']
             )
             if createdMessageValue == "Conversation not found":
                 raise Exception("Conversation not found for the given conversation ID: " + conversation_id + ".")
@@ -831,9 +836,19 @@ async def get_conversation():
     
     # get the messages for the conversation from cosmos
     conversation_messages = await cosmos_conversation_client.get_messages(user_id, conversation_id)
-
+        
     ## format the messages in the bot frontend format
-    messages = [{'id': msg['id'], 'role': msg['role'], 'content': msg['content'], 'createdAt': msg['createdAt'], 'feedback': msg.get('feedback')} for msg in conversation_messages]
+    messages = [
+        {
+            'id': msg['id'],
+            'role': msg['role'],
+            'content': msg['content'],
+            'createdAt': msg['createdAt'],
+            'feedback': msg.get('feedback'),
+            'hidden': msg.get('hidden')
+        }
+        for msg in conversation_messages
+    ]
 
     await cosmos_conversation_client.cosmosdb_client.close()
     return jsonify({"conversation_id": conversation_id, "messages": messages}), 200
@@ -978,16 +993,67 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]['content']
     
-# async def document_summary_internal(request_json):
-#     print(request_json)
-
-# @bp.route("/documentsummary", methods=["POST"])
-# async def documentsummary():
-#     if not request.is_json:
-#         return jsonify({"error": "request must be json"}), 415
-#     request_json = await request.get_json()
-#     return await document_summary_internal(request_json)
 
 
+async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
+    azure_openai_client = init_openai_client(use_data=False)
+    response = await azure_openai_client.chat.completions.create(
+        model=AZURE_OPENAI_MODEL,
+        messages=[{'role': 'system', 'content': AZURE_OPENAI_SYSTEM_MESSAGE},
+                  {'role': 'user', 'content': f'{prompt} {chunk}'}],
+        temperature=1,
+        max_tokens=max_tokens
+    )
+    return response.choices[0].message.content
+
+@bp.websocket('/documentsummary/refine')
+async def refineProgress():
+    try:
+        while True:
+            data = await websocket.receive()
+            data = json.loads(data)
+            document = data['document']
+            prompt = data['prompt']
+            if not prompt == '':
+                prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
+            
+            try:
+                chunks = chunkString(document, 3500, 100)
+                combined_summaries = ""
+                for chunk in chunks:
+                    index = chunks.index(chunk)
+                    if index == len(chunks) - 1:
+                        break
+                    await websocket.send(f"{chunks.index(chunk)+1}/{len(chunks)}")
+                    combined_summaries = await summarize_chunk(combined_summaries + chunk, 4000)
+                final_prompt = f'Tell me in as much detail as possible what the following document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+                await websocket.send(f"done:{final_prompt} {combined_summaries} {chunks[len(chunks)-1]}")
+            except Exception as e:
+                print(f"Error  reading document: {e}")
+    finally:
+        await websocket.close()
+        print("Client disconnected:")
+    
+async def document_summary_reduce_internal(document, prompt):
+    if not prompt == '':
+        prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
+    try:
+        chunks = chunkString(document, 4000, 100)
+        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(6000/len(chunks))) for chunk in chunks])
+        combined_summaries = " ".join(chunk_summaries)
+        final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+        return jsonify({"response": f'{final_prompt} {combined_summaries}'}), 200
+    except Exception as e:
+        print(f"Error reducing document: {e}")
+        return jsonify({"error": f"Error reading document: {e}"}), 500
+    
+
+@bp.route("/documentsummary/reduce", methods=["POST"])
+async def documentsummary():
+    document = await request.get_data(as_text=True)
+    prompt = request.headers['Prompt']
+    if not document.strip():
+        return jsonify({"error": "Body not found"}), 400
+    return await document_summary_reduce_internal(document, prompt)
 
 app = create_app()

@@ -43,6 +43,7 @@ import { useBoolean } from "@fluentui/react-hooks";
 import { HistoryArrowButton } from "../../components/common/Button";
 import GuideanceModal from "../../components/GuidanceModal/GuidedanceModal";
 import DocumentSummaryModal from "../../components/DocumentSummary/DocumentSummaryModal";
+import DocumentUpload from "../../components/DocumentSummary/DocumentUpload";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -114,6 +115,7 @@ const Chat = () => {
             return;
         }
         const userInfoList = await getUserInfo();
+        console.log("userInfoList", userInfoList)
         if (userInfoList.length === 0 && window.location.hostname !== "127.0.0.1") {
             setShowAuthMessage(true);
         }
@@ -155,17 +157,17 @@ const Chat = () => {
         }
     }
 
-    const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string) => {
+    const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string, hidden?: boolean) => {
         setIsLoading(true);
         setShowLoadingMessage(true);
         const abortController = new AbortController();
         abortFuncs.current.unshift(abortController);
-
         const userMessage: ChatMessage = {
             id: uuid(),
             role: "user",
             content: question,
             date: new Date().toISOString(),
+            hidden: hidden ? hidden : false
         };
 
         let conversation: Conversation | null | undefined;
@@ -279,7 +281,7 @@ const Chat = () => {
         return abortController.abort();
     };
 
-    const makeApiRequestWithCosmosDB = async (question: string, conversationId?: string) => {
+    const makeApiRequestWithCosmosDB = async (question: string, conversationId?: string, hidden?: boolean) => {
         setIsLoading(true);
         setShowLoadingMessage(true);
         const abortController = new AbortController();
@@ -290,6 +292,7 @@ const Chat = () => {
             role: "user",
             content: question,
             date: new Date().toISOString(),
+            hidden: hidden ? hidden : false
         };
 
         //api call params set here (generate)
@@ -721,7 +724,7 @@ const Chat = () => {
                                     </>
                                 ) : (
                                     <>
-                                    HELLOOO. This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
+                                    DEV MODE. This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>
@@ -737,14 +740,13 @@ const Chat = () => {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                     />
-
                             </Stack>
 
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px" }} role="log">
                                 {messages.map((answer, index) => (
                                     <>
-                                        {answer.role === "user" ? (
+                                        {answer.role === "user" && !answer.hidden ? (
                                             <div className={styles.chatMessageUser} tabIndex={0}>
                                                 <div className={styles.chatMessageUserMessage}>{answer.content}</div>
                                             </div>
@@ -896,6 +898,10 @@ const Chat = () => {
                                 <DocumentSummaryModal
                 isOpen={isDocSumModalOpen}
                 onClose={closeDocSumModal}
+                onSend={(question, id) => {
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB ? makeApiRequestWithCosmosDB(question, id, true) : makeApiRequestWithoutCosmosDB(question, id, true)
+                }}
+                conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
                     />
 
                             </Stack>

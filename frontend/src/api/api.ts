@@ -16,19 +16,25 @@ export async function conversationApi(options: ConversationRequest, abortSignal:
     return response;
 }
 
-export async function documentsummaryApi(options: ConversationRequest, abortSignal: AbortSignal): Promise<Response> {
-    const response = await fetch("/documentsummary", {
+export async function documentSummaryReduceApi(document: string, prompt: string): Promise<Response> {
+    
+    try {
+    const response = await fetch("/documentsummary/reduce", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "multipart/form-data",
+            "prompt": prompt,
         },
-        body: JSON.stringify({
-            messages: options.messages
-        }),
-        signal: abortSignal
+        body: document
     });
-
     return response;
+
+    } catch (error) {
+        // Handle fetch errors
+        console.error("Error fetching data:", error);
+        throw error; // Re-throw the error to be caught by the caller
+    }
+
 }
 
 export async function getUserInfo(): Promise<UserInfo[]> {
@@ -109,7 +115,8 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
                     role: msg.role,
                     date: msg.createdAt,
                     content: msg.content,
-                    feedback: msg.feedback ?? undefined
+                    feedback: msg.feedback ?? undefined,
+                    hidden: msg.hidden ? true : false
                 }
                 messages.push(message)
             });

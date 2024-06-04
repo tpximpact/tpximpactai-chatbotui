@@ -1,17 +1,15 @@
 .modalContainer{
     padding:5% 10%;
+    border: 3px solid #000;
+    border-radius: 30px;
 }
 
 .modalHeader {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 10px;
     font-family: 'PlayfairDisplay';
-    text-align: center;
-    align-self: center;
     display:flex;
-    justify-content: center;
+    font-size:24px
 
 }
 
@@ -25,3 +23,29 @@
     color: #000;
     font-size: 18px;
 }
+
+.methodContainer{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-direction: row;
+}
+
+.methodBubble{
+    font-family: "DMSans-Regular";
+    border: 1px solid black;
+    padding: 5px 15px 10px 15px;
+    border-radius: 30px;
+    margin: 25px 10px 5px 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease; /* Add transition property */
+    cursor: pointer; 
+}
+
+.methodBubble:hover {
+    transform: scale(1.05); /* Apply scaling effect on hover */
+}
+  
+  
+/* Document Upload  */
+
