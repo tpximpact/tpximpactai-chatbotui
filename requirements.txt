@@ -11,3 +11,4 @@ aiohttp==3.9.2
 gunicorn==20.1.0
 azure-monitor-opentelemetry
 azure-monitor-events-extension
+langchain

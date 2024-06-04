@@ -28,7 +28,8 @@ from azure.monitor.events.extension import track_event
 from opentelemetry import trace
 from opentelemetry import metrics
 
-from scripts.data_utils import chunkString, estimateTokens
+import tiktoken
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
@@ -993,6 +994,26 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]['content']
     
+
+    
+def chunkString(text, chunk_size,overlap):
+    SENTENCE_ENDINGS = [".", "!", "?"]
+    WORDS_BREAKS = list(reversed([",", ";", ":", " ", "(", ")", "[", "]", "{", "}", "\t", "\n"]))
+
+    encoding = tiktoken.get_encoding("cl100k_base")
+    tokens = encoding.encode(text)
+
+    print('NUMBER OF TOKENS', len(tokens))
+
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        separators=SENTENCE_ENDINGS + WORDS_BREAKS,
+        chunk_size=chunk_size, chunk_overlap=overlap)
+    chunked_content_list = splitter.split_text(text)
+    print('NUMBER OF CHUNKS', len(chunked_content_list))
+    print('TOKENS IN FIRST CHUNK', len(encoding.encode(chunked_content_list[0])))
+
+    return chunked_content_list
+
 
 
 async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
