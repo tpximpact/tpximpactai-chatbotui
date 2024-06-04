@@ -12,3 +12,4 @@ gunicorn==20.1.0
 azure-monitor-opentelemetry
 azure-monitor-events-extension
 langchain
+tiktoken
