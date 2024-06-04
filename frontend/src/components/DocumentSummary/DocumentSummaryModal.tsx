@@ -4,8 +4,6 @@ import styles from './DocumentSummaryModal.module.css';
 import DocumentUpload from './DocumentUpload';
 import { ShareButton } from '../common/Button';
 import { documentSummaryReduceApi } from '../../api';
-import e from 'express';
-import { set, startsWith } from 'lodash';
 import LoadingBar from '../LoadingBar';
 import Loading from '../Loading';
 
