@@ -687,6 +687,7 @@ const Chat = () => {
                     {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
 
                     <div className={styles.chatContainer}>
+
                     <div
   style={{
     transform: 'scaleX(0.7)',
@@ -914,8 +915,7 @@ const Chat = () => {
                                 }}
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
                             />
-                        </Stack>
-                            <span style= {{display:'inline', position:'absolute', bottom:'21px', color:'black', fontSize:'14px'}}> 
+                            <span style= {{position:'absolute', bottom:'-43px', left:'30%', color:'black', fontSize:'14px'}}> 
                                 Always fact-check responses thoroughly for accuracy and<a 
                                 href='#'
                                 onClick={openHModal}
@@ -924,6 +924,8 @@ const Chat = () => {
                                 }}
                                 >hallucination.</a>
                             </span>
+
+                        </Stack>
                             <Modal
                                   styles= {{main: {borderRadius:'20px', width:'65%'} } }
                                   isOpen={isHModalOpen}
