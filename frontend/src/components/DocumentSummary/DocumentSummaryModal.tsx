@@ -22,25 +22,28 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
     const [refining, setRefining] = React.useState<boolean>(false);
     const [reducing, setReducing] = React.useState<boolean>(false);
     const reset = () => {
+        setInterval(() => {
         setDocString('');
         setMethod('');
         setPrompt('');
         setProgress(0);
         setRefining(false);
         setReducing(false);
+        },1000);
     }
+    const [refineWS, setRefineWS] = React.useState<WebSocket | null>(null);
+
     useEffect(() => {
         if (refining) {
             const ws = new WebSocket("/documentsummary/refine");
+            setRefineWS(ws);
             ws.onmessage = (event) => {
                 setProgress(event.data);
                 if (event.data.startsWith('done:')) {
                     const messageData = event.data.slice(5);
                     ws.close();
                     handleSend(messageData); 
-                    setInterval(() => {
-                        reset();
-                    }, 1000);
+                    reset();
                 }else{
                     setProgress(eval(event.data));
                 }
@@ -74,10 +77,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
         }).then((data) => {
             // const summary = data.response.replace(/(?:\r\n|\r|\n)/g, '<br>');
             handleSend(data.response);
-            setInterval(() => {
-                reset();
-            }, 3000);
-
+            reset();
         })
     }
 
@@ -88,7 +88,20 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
             onSend(summary);
         }
         onClose();
+    }
 
+    const handleClose = () => {
+        if (refining) {
+            const userConfirmed = confirm('Are you sure you want to cancel summarisation?');
+            if (userConfirmed) {
+                refineWS!.send(JSON.stringify({ command: 'abort' }));
+                onClose();
+                reset();
+            }
+        } else {
+            reset();
+            onClose();
+        }
     }
 
     return (
@@ -103,7 +116,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     onMouseOver={undefined}
                 iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
                 ariaLabel="Close"
-                onClick={onClose}
+                onClick={handleClose}
                 styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}
                 className={styles.closeButton} // Apply custom CSS class for close button
                 />

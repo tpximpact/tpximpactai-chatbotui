@@ -10,9 +10,10 @@ import { isEmpty } from "lodash-es";
 import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
-import Contoso from "../../assets/Contoso.svg";
-import PrimaryBlack from "../../assets/Primary black logo.png";
-import SecondaryX from  "../../assets/Secondary X.png";
+import SecondaryXCropped from  "../../assets/Secondary X Cropped.png";
+import Butterfly from  "../../assets/tpxbutterflypurple.png";
+
+
 import { XSSAllowTags } from "../../constants/xssAllowTags";
 import arrowLeft from "../../assets/fatarrowleft.png";
 import arrowRight from "../../assets/fatarrowright.png";
@@ -671,16 +672,21 @@ const Chat = () => {
     return (
         <div className={styles.container} role="main">
             {showAuthMessage ? (
-                <Stack className={styles.chatEmptyState}>
-                    {/* <ShieldLockRegular className={styles.chatIcon} style={{ color: 'darkorange', height: "200px", width: "200px" }} />
-                    <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
-                    <h2 className={styles.chatEmptyStateSubtitle}>
-                        This app does not have authentication configured. Please add an identity provider by finding your app in the <a href="https://portal.azure.com/" target="_blank">Azure Portal</a> 
-                        and following <a href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization" target="_blank">these instructions</a>.
-                    </h2>
-                    <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>Authentication configuration takes a few minutes to apply. </strong></h2>
-                    <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong></h2> */}
-                </Stack>
+                // <Stack horizontal className={styles.chatRoot}>
+                // <div className={styles.chatContainer}>
+                //     <Stack className={styles.chatEmptyState}>
+                //         <ShieldLockRegular className={styles.chatIcon} style={{ color: 'black', height: "200px", width: "200px" }} />
+                //         <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
+                //         <h2 className={styles.chatEmptyStateSubtitle}>
+                //             This app does not have authentication configured. Please add an identity provider by finding your app in the <a href="https://portal.azure.com/" target="_blank">Azure Portal</a> 
+                //             and following <a href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization" target="_blank">these instructions</a>.
+                //         </h2>
+                //         <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>Authentication configuration takes a few minutes to apply. </strong></h2>
+                //         <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong></h2>
+                //     </Stack>
+                //     </div>
+                // </Stack>
+                null
             ) : (
                 <Stack horizontal className={styles.chatRoot}>
 
@@ -712,13 +718,26 @@ const Chat = () => {
 
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
+                                <div style = {{display:'flex', flexDirection:'row', position:'relative'}}>
+                                    <div style = {{display:'flex', flexDirection:'column'}}>
+                                        <span className={styles.chatEmptyStatePreTitle}>{ui?.chat_pre_title}</span>
+                                        <span className={styles.chatEmptyStateTitle}>{ui?.chat_title}</span>
+                                    </div>
+
                                 <img
-                                    src={ui?.chat_logo ? ui.chat_logo : SecondaryX}
+                                    src={ui?.chat_logo ? ui.chat_logo : SecondaryXCropped}
                                     className={styles.chatIcon}
                                     aria-hidden="true"
+                                    />
+                                 <img
+                                    src={ui?.chat_logo ? ui.chat_logo : Butterfly}
+                                    className={styles.chatIconSecondary}
+                                    aria-hidden="true"
                                 />
-                                <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
-                                <h2 className={styles.chatEmptyStateSubtitle}>  
+
+                                </div>
+                                <h2 className={styles.chatEmptyStateSubtitle}>
+
                                 {ui?.chat_description ? (
                                     <>
                                     {ui.chat_description}
@@ -818,7 +837,7 @@ const Chat = () => {
                                             color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            background: "#F0F0F0"
+                                            background: "#FFFFFF"
                                         },
                                         rootHovered: {
                                             background: '#cafce5',
@@ -874,7 +893,7 @@ const Chat = () => {
                                             color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            background: "#F0F0F0"
+                                            background: "#FFFFFF"
                                         },
                                         rootHovered: {
                                             background: '#ffcfca',
@@ -915,14 +934,16 @@ const Chat = () => {
                                 }}
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
                             />
-                            <span style= {{position:'absolute', bottom:'-43px', left:'30%', color:'black', fontSize:'14px'}}> 
-                                Always fact-check responses thoroughly for accuracy and<a 
-                                href='#'
-                                onClick={openHModal}
-                                style = {{
-                                    color:'blue'
-                                }}
-                                >hallucination.</a>
+                            <span style= {{whiteSpace: 'nowrap', overflow:'clip', position:'absolute', bottom:'-45px', color:'black', fontSize:'14px', width:'100%', textAlign:'center'}}> 
+                                Always fact-check responses thoroughly for accuracy and
+                                <a 
+                                    href='#'
+                                    onClick={openHModal}
+                                    style = {{
+                                        color:'blue'
+                                    }}
+                                    >hallucination.
+                                </a>
                             </span>
 
                         </Stack>

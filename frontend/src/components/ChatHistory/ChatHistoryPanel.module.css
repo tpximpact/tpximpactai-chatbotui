@@ -6,7 +6,21 @@
 .listContainer {
     overflow: hidden auto;
     max-height: calc(90vh - 105px);
+    scrollbar-color: #FFFFFF #0252bb;
 }
+
+/* .listContainer::-webkit-scrollbar {
+    background: gray;
+}
+
+.listContainer::-webkit-scrollbar-track {
+    background: #0252bb;
+}
+
+.listContainer::-webkit-scrollbar-thumb {
+    background: gray;
+} */
+
 
 .panelTitle {
     align-self: center;
@@ -50,8 +64,9 @@
 
 }
 
+/* 
 .itemButton2 {
-}
+} */
 
 
 .itemButton:hover {

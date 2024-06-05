@@ -48,7 +48,8 @@ MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION="2024-02-15-preview"
 UI_TITLE = os.environ.get("UI_TITLE")
 UI_LOGO = os.environ.get("UI_LOGO")
 UI_CHAT_LOGO = os.environ.get("UI_CHAT_LOGO")
-UI_CHAT_TITLE = os.environ.get("UI_CHAT_TITLE") or "Welcome to ImpactAI"
+UI_CHAT_PRE_TITLE = os.environ.get("UI_CHAT_PRE_TITLE") or "Welcome to"
+UI_CHAT_TITLE = os.environ.get("UI_CHAT_TITLE") or "ImpactAI"
 UI_CHAT_DESCRIPTION = os.environ.get("UI_CHAT_DESCRIPTION")
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
@@ -198,6 +199,7 @@ frontend_settings = {
         "title": UI_TITLE,
         "logo": UI_LOGO,
         "chat_logo": UI_CHAT_LOGO or UI_LOGO,
+        "chat_pre_title": UI_CHAT_PRE_TITLE,
         "chat_title": UI_CHAT_TITLE,
         "chat_description": UI_CHAT_DESCRIPTION,
         "show_share_button": UI_SHOW_SHARE_BUTTON
@@ -1003,14 +1005,11 @@ def chunkString(text, chunk_size,overlap):
     encoding = tiktoken.get_encoding("cl100k_base")
     tokens = encoding.encode(text)
 
-    print('NUMBER OF TOKENS', len(tokens))
 
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         separators=SENTENCE_ENDINGS + WORDS_BREAKS,
         chunk_size=chunk_size, chunk_overlap=overlap)
     chunked_content_list = splitter.split_text(text)
-    print('NUMBER OF CHUNKS', len(chunked_content_list))
-    print('TOKENS IN FIRST CHUNK', len(encoding.encode(chunked_content_list[0])))
 
     return chunked_content_list
 
@@ -1030,6 +1029,19 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
 @bp.websocket('/documentsummary/refine')
 async def refineProgress():
     try:
+        
+        abort_flag = False
+
+        async def listen_for_abort():
+            nonlocal abort_flag
+            while not abort_flag:
+                data = await websocket.receive()
+                data = json.loads(data)
+                if data.get('command') == 'abort':
+                    abort_flag = True
+
+        asyncio.create_task(listen_for_abort())
+
         while True:
             data = await websocket.receive()
             data = json.loads(data)
@@ -1042,6 +1054,8 @@ async def refineProgress():
                 chunks = chunkString(document, 3500, 100)
                 combined_summaries = ""
                 for chunk in chunks:
+                    if abort_flag:
+                        return
                     index = chunks.index(chunk)
                     if index == len(chunks) - 1:
                         break
@@ -1053,7 +1067,6 @@ async def refineProgress():
                 print(f"Error  reading document: {e}")
     finally:
         await websocket.close()
-        print("Client disconnected:")
     
 async def document_summary_reduce_internal(document, prompt):
     if not prompt == '':

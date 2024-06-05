@@ -105,6 +105,7 @@ export type ErrorMessage = {
 
 export type UI = {
     title: string;
+    chat_pre_title: string;
     chat_title: string;
     chat_description: string;
     logo?: string;
