@@ -29,8 +29,7 @@
 
 .panelTitle {
     align-self: center;
-    font-weight: 600;
-    font-size: 18px;
+    font-size: 24px;
     margin-right: auto;
     padding-left: 20px;
     font-family: 'OswaldBold';
@@ -100,12 +99,17 @@
 }
 
 .chatMonth {
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 600;
-    margin-bottom: 5px;
     padding-left: 15px;
-    font-family: 'DMSans-SemiBold';
+    padding-top:6px;
+    padding-bottom:8px;
+    font-family: 'PlayfairDisplay';
     color: #ffffff;
+    background-color: #023B84;
+    border-radius: 15px;
+    width:95%;
+
 }
 
 .chatTitle {
@@ -113,8 +117,8 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-family: 'PlayfairDisplay';
-    font-size: 18px;
+    font-family: 'DMSans-SemiBold';
+    font-size: 16px;
     color: #ffffff;
 }
 
