@@ -112,6 +112,10 @@ const Chat = () => {
         const historyLoading  = appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading
         setChatHistoryLoading(historyLoading)
         setIsLoading(historyLoading)
+        if (!appStateContext?.state.isChatHistoryOpen){
+            appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+        }
+
     }, [appStateContext?.state.chatHistoryLoadingState])
 
     const getUserInfoList = async () => {
