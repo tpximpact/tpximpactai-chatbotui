@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
-import { isEmpty } from "lodash-es";
+import { isEmpty, set } from "lodash-es";
 import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
@@ -45,6 +45,7 @@ import { HistoryArrowButton } from "../../components/common/Button";
 import GuideanceModal from "../../components/GuidanceModal/GuidedanceModal";
 import DocumentSummaryModal from "../../components/DocumentSummary/DocumentSummaryModal";
 import DocumentUpload from "../../components/DocumentSummary/DocumentUpload";
+import Loading from "../../components/Loading";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -58,6 +59,7 @@ const Chat = () => {
     const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled;
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [chatHistoryLoading, setChatHistoryLoading] = useState<boolean>(false);
     const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false);
     const [activeCitation, setActiveCitation] = useState<Citation>();
     const [isCitationPanelOpen, setIsCitationPanelOpen] = useState<boolean>(false);
@@ -107,7 +109,9 @@ const Chat = () => {
     }
 
     useEffect(() => {
-        setIsLoading(appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading)
+        const historyLoading  = appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading
+        setChatHistoryLoading(historyLoading)
+        setIsLoading(historyLoading)
     }, [appStateContext?.state.chatHistoryLoadingState])
 
     const getUserInfoList = async () => {
@@ -809,7 +813,7 @@ const Chat = () => {
                         )}
 
                         <Stack horizontal className={styles.chatInput}>
-                            {isLoading && (
+                            {(isLoading && !chatHistoryLoading) && (
                                 <Stack
                                     horizontal
                                     className={styles.stopGeneratingContainer}
@@ -823,6 +827,14 @@ const Chat = () => {
                                     <span className={styles.stopGeneratingText} aria-hidden="true">Stop generating</span>
                                 </Stack>
                             )}
+                            {chatHistoryLoading && (
+                              <div className={styles.chatHistoryLoading}>
+                                <span className={styles.stopGeneratingText} style= {{marginRight:'2px'}}>Loading chat history</span>
+                                <Loading size={15} color="#000000" />
+
+                              </div>
+                            )}
+                                    
                             <Stack>
                                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <CommandBarButton
                                     role="button"
