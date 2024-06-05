@@ -6,21 +6,26 @@
 .listContainer {
     overflow: hidden auto;
     max-height: calc(90vh - 105px);
-    scrollbar-color: #FFFFFF #0252bb;
+    scrollbar-color: #023B84 #0252bb;
 }
 
-/* .listContainer::-webkit-scrollbar {
-    background: gray;
+.listContainer::-webkit-scrollbar {
+    width: 10px; /* Adjust the width of the scrollbar */
 }
 
 .listContainer::-webkit-scrollbar-track {
-    background: #0252bb;
+    background: #0252bb; /* Track background color */
 }
 
 .listContainer::-webkit-scrollbar-thumb {
-    background: gray;
-} */
+    background: #023B84; /* Thumb (scroll handle) background color */
+    border-radius: 6px; /* Optional: rounded corners */
+    border: 2px solid #0252bb; /* Optional: thumb border */
+}
 
+.listContainer::-webkit-scrollbar-thumb:hover {
+    background: #CCCCCC; /* Optional: thumb color on hover */
+}
 
 .panelTitle {
     align-self: center;
