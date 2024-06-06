@@ -348,7 +348,7 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
           <div ref={observerTarget} />
           <Separator styles={{
             root: {
-                width: '100%',
+                width: '90%',
                 position: 'relative',
                 '::before': {
                   backgroundColor: '#d6d6d6',

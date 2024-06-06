@@ -10,21 +10,21 @@
 }
 
 .listContainer::-webkit-scrollbar {
-    width: 10px; /* Adjust the width of the scrollbar */
+    width: 10px; 
 }
 
 .listContainer::-webkit-scrollbar-track {
-    background: #0252bb; /* Track background color */
+    background: #0252bb; 
 }
 
 .listContainer::-webkit-scrollbar-thumb {
-    background: #023B84; /* Thumb (scroll handle) background color */
-    border-radius: 6px; /* Optional: rounded corners */
-    border: 2px solid #0252bb; /* Optional: thumb border */
+    background: #023B84; 
+    border-radius: 6px; 
+    border: 2px solid #0252bb; 
 }
 
 .listContainer::-webkit-scrollbar-thumb:hover {
-    background: #CCCCCC; /* Optional: thumb color on hover */
+    background: #CCCCCC;
 }
 
 .panelTitle {
@@ -108,8 +108,7 @@
     color: #ffffff;
     background-color: #023B84;
     border-radius: 15px;
-    width:95%;
-
+    width:90%;
 }
 
 .chatTitle {

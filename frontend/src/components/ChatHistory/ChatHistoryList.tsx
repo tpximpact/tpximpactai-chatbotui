@@ -74,7 +74,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = () => {
             </StackItem>
         </Stack>
     }
-    
+
     return (
         <ChatHistoryListItemGroups groupedChatHistory={groupedChatHistory}/>
     );
