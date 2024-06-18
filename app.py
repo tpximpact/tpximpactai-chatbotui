@@ -1104,7 +1104,7 @@ async def collect_documents(filenames, container_name):
                     account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
                     container_name = container_name,
                     blob = filename,
-                    credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
+                    credential = AZURE_STORAGE_KEY
                 )
                 documents = loader.load_data()
                 documents = [doc.text for doc in documents if doc]
