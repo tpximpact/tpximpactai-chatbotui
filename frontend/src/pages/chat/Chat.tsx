@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
 import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal } from "@fluentui/react";
-import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
+import { SquareRegular, ShieldLockRegular, ErrorCircleRegular, Dismiss12Regular, Dismiss16Regular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
@@ -34,7 +34,7 @@ import {
     historyClear,
     ChatHistoryLoadingState,
     CosmosDBStatus,
-    ErrorMessage
+    ErrorMessage,
 } from "../../api";
 import { Answer } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
@@ -70,6 +70,7 @@ const Chat = () => {
     const [clearingChat, setClearingChat] = useState<boolean>(false);
     const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true);
     const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
+    const [filenames, setFilenames] = useState<string[]>([]);
 
     const errorDialogContentProps = {
         type: DialogType.close,
@@ -204,7 +205,7 @@ const Chat = () => {
         setMessages(conversation.messages)
 
         const request: ConversationRequest = {
-            messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)]
+            messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)],
         };
 
         let result = {} as ChatResponse;
@@ -295,7 +296,6 @@ const Chat = () => {
         setShowLoadingMessage(true);
         const abortController = new AbortController();
         abortFuncs.current.unshift(abortController);
-
         const userMessage: ChatMessage = {
             id: uuid(),
             role: "user",
@@ -318,12 +318,14 @@ const Chat = () => {
             } else {
                 conversation.messages.push(userMessage);
                 request = {
-                    messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)]
+                    messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)],
+                    filenames: filenames ? filenames : []
                 };
             }
         } else {
             request = {
-                messages: [userMessage].filter((answer) => answer.role !== ERROR)
+                messages: [userMessage].filter((answer) => answer.role !== ERROR),
+                filenames: filenames ? filenames : []
             };
             setMessages(request.messages)
         }
@@ -649,7 +651,8 @@ const Chat = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const openModal = () => {
-      setIsModalOpen(true);
+    //   setIsModalOpen(true);
+    window.open("https://docs.google.com/document/d/1VTs09xtQziGbRNg-wHpTuJR7VBnATOujTtxrADG9g6s", "_blank");
     };
   
     const closeModal = () => {
@@ -817,13 +820,48 @@ const Chat = () => {
                         )}
 
                         <Stack horizontal className={styles.chatInput}>
+                            <div className= {styles.statusBarContainer}>
+
+                            {filenames.length! > 0 && (
+                                <Stack
+                                horizontal
+                                className={styles.askingQuestionsContainer}
+                                role="button"
+                                aria-label="Stop generating"
+                                tabIndex={0}
+                                onClick={() => {setFilenames([])}}
+                                onKeyDown={e => e.key === "Enter" || e.key === " " ? setFilenames([]) : null}
+                            >
+                                <span className={styles.askingQuestionsText} aria-hidden="true">
+                                    Asking questions about 
+                                </span>
+
+                                {filenames.length == 1 ? 
+                                    <span className ={styles.stopGeneratingText} aria-hidden="true">
+                                        {filenames[0]}
+                                    </span>
+                                :
+                                    <>
+                                    <span className ={styles.stopGeneratingText} aria-hidden="true">
+                                        {filenames.length}
+                                    </span>
+                                    <span className={styles.askingQuestionsText} aria-hidden="true">
+                                        documents
+                                    </span>
+                                    </>
+                                }
+
+                                <Dismiss12Regular className={styles.stopGeneratingIcon} aria-hidden="true" />
+                            </Stack>
+                            
+                            )}
                             {(isLoading && !chatHistoryLoading) && (
                                 <Stack
                                     horizontal
                                     className={styles.stopGeneratingContainer}
                                     role="button"
                                     aria-label="Stop generating"
-                                    tabIndex={0}
+                                    tabIndex={1}
                                     onClick={stopGenerating}
                                     onKeyDown={e => e.key === "Enter" || e.key === " " ? stopGenerating() : null}
                                 >
@@ -838,7 +876,8 @@ const Chat = () => {
 
                               </div>
                             )}
-                                    
+                            </div>
+       
                             <Stack>
                                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <CommandBarButton
                                     role="button"
@@ -868,34 +907,6 @@ const Chat = () => {
                                     disabled={disabledButton()}
                                     aria-label="start a new chat button"
                                 />}
-                                {/* <CommandBarButton
-                                    role="button"
-                                    styles={{
-                                        icon: {
-                                            color: 'black',
-                                        },
-                                        iconHovered: {
-                                            color: 'black',
-                                        },
-                                        iconDisabled: {
-                                            color: "#BDBDBD !important",
-                                        },
-                                        root: {
-                                            background: "#F0F0F0"
-                                        },
-                                        rootHovered: {
-                                            background: '#ffcfca',
-                                        },
-                                        rootDisabled: {
-                                            background: "#F0F0F0"
-                                        }
-                                    }}
-                                    className={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? styles.clearChatBroom : styles.clearChatBroomNoCosmos}
-                                    iconProps={{ iconName: 'Broom' }}
-                                    onClick={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? clearChat : newChat}
-                                    disabled={disabledButton()}
-                                    aria-label="clear chat button"
-                                /> */}
                                 <CommandBarButton
                                     role="button"
                                     styles={{
@@ -938,6 +949,8 @@ const Chat = () => {
                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB ? makeApiRequestWithCosmosDB(question, id, true) : makeApiRequestWithoutCosmosDB(question, id, true)
                 }}
                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
+                setFilenames={setFilenames}
+                filenames={filenames}
                     />
 
                             </Stack>

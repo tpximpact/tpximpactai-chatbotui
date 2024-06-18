@@ -49,6 +49,8 @@ export const AppStateContext = createContext<{
     useCasesShowing: boolean;
     openUseCases: () => void;
     closeUseCases: () => void;
+    filenames: string[] | undefined;
+    setFilenames: React.Dispatch<React.SetStateAction<string[] | undefined>>;
   } | undefined>(undefined);
 
 type AppStateProviderProps = {
@@ -58,7 +60,7 @@ type AppStateProviderProps = {
   export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) => {
     const [state, dispatch] = useReducer(appStateReducer, initialState);
     const [useCasesShowing, setUseCasesShowing] = useState(false)
-
+    const [filenames, setFilenames] = useState<string[] | undefined>(undefined);
     const openUseCases = () => {
         setUseCasesShowing(true)
     }
@@ -138,7 +140,9 @@ type AppStateProviderProps = {
        dispatch,
        useCasesShowing,
        openUseCases,
-       closeUseCases
+       closeUseCases,
+       filenames,
+       setFilenames
        }}>
         {children}
       </AppStateContext.Provider>

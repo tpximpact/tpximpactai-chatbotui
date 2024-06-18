@@ -69,6 +69,19 @@ def generateFilterString(userToken):
     group_ids = ", ".join([obj['id'] for obj in userGroups])
     return f"{AZURE_SEARCH_PERMITTED_GROUPS_COLUMN}/any(g:search.in(g, '{group_ids}'))"
 
+def generateSimpleFilterString(user_id, filenames):
+        # Construct filter string
+    user_filter = f"user_id eq '{user_id}'"
+    filename_filters = [f"filename eq '{filename}'" for filename in filenames]
+    filename_filter = " or ".join(filename_filters)
+    
+    # Combine user_id filter and filename filters
+    combined_filter = f"({user_filter}) and ({filename_filter})"
+    
+    return combined_filter
+
+
+
 def format_non_streaming_response(chatCompletion, history_metadata, message_uuid=None):
     response_obj = {
         "id": chatCompletion.id,

@@ -4,7 +4,7 @@ const COLOURS = {
     green: '#cafce5',
     lightblue: '#c8e9ff',
     salmon: '#ffcfca',
-    purple: '#e7d2ff'
+    purple: '#e7d2ff',
   };
   
 export default COLOURS;

@@ -2,8 +2,11 @@ import asyncio
 import copy
 import json
 import os
+import re
 import logging
 import uuid
+import docx
+import io
 from dotenv import load_dotenv
 
 from quart import (
@@ -32,12 +35,33 @@ import tiktoken
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
+from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
+from azure.identity.aio import ClientSecretCredential
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.search.documents import SearchClient
+from azure.search.documents.indexes import SearchIndexClient
+from azure.search.documents.indexes.models import *
+
+from llama_index.core import StorageContext, VectorStoreIndex, Document
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.settings import Settings
+from llama_index.llms.azure_openai import AzureOpenAI
+from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
+from llama_index.vector_stores.azureaisearch import AzureAISearchVectorStore, IndexManagement
+from openai import AzureOpenAI as BaseAzureOpenAI
+from llama_index.core import download_loader
+from azure.storage.blob import BlobClient
+
+
+
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 from opentelemetry.trace import SpanKind
 tracer = trace.get_tracer(__name__)
 
 
-from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
+
+from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, generateSimpleFilterString, parse_multi_columns, format_non_streaming_response
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
@@ -88,6 +112,11 @@ SEARCH_TOP_K = os.environ.get("SEARCH_TOP_K", 5)
 SEARCH_STRICTNESS = os.environ.get("SEARCH_STRICTNESS", 3)
 SEARCH_ENABLE_IN_DOMAIN = os.environ.get("SEARCH_ENABLE_IN_DOMAIN", "true")
 
+# Document storage settings
+AZURE_STORAGE_ACCOUNT = os.environ.get("AZURE_STORAGE_ACCOUNT")
+AZURE_STORAGE_KEY = os.environ.get("AZURE_STORAGE_KEY")
+
+
 # ACS Integration Settings
 AZURE_SEARCH_SERVICE = os.environ.get("AZURE_SEARCH_SERVICE")
 AZURE_SEARCH_INDEX = os.environ.get("AZURE_SEARCH_INDEX")
@@ -121,6 +150,7 @@ AZURE_OPENAI_MODEL_NAME = os.environ.get("AZURE_OPENAI_MODEL_NAME", "gpt-35-turb
 AZURE_OPENAI_EMBEDDING_ENDPOINT = os.environ.get("AZURE_OPENAI_EMBEDDING_ENDPOINT")
 AZURE_OPENAI_EMBEDDING_KEY = os.environ.get("AZURE_OPENAI_EMBEDDING_KEY")
 AZURE_OPENAI_EMBEDDING_NAME = os.environ.get("AZURE_OPENAI_EMBEDDING_NAME", "")
+AZURE_OPENAI_EMBEDDING_MODEL_NAME = os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL_NAME")
 
 # CosmosDB Mongo vcore vector db Settings
 AZURE_COSMOSDB_MONGO_VCORE_CONNECTION_STRING = os.environ.get("AZURE_COSMOSDB_MONGO_VCORE_CONNECTION_STRING")  #This has to be secure string
@@ -311,8 +341,34 @@ def init_cosmosdb_client():
         
     return cosmos_conversation_client
 
+def init_container_client(storage_container_name):
 
-def get_configured_data_source():
+    storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
+
+    blob_service_client = BlobServiceClient(
+    account_url=storage_account_url, 
+    credential=AZURE_STORAGE_KEY
+    )
+
+    container_client = blob_service_client.get_container_client(storage_container_name)
+    return container_client
+
+def init_search_client():
+    search_client = None
+    try:
+        search_client = SearchClient(
+            endpoint=f"https://{AZURE_SEARCH_SERVICE}.search.windows.net/",
+            index_name=AZURE_SEARCH_INDEX,
+            credential=AzureKeyCredential(AZURE_SEARCH_KEY)
+        )
+    except Exception as e:
+        logging.exception("Exception in Azure Cognitive Search initialization", e)
+        search_client = None
+        raise e
+        
+    return search_client
+
+def get_configured_data_source(user_id, filenames):
     data_source = {}
     query_type = "simple"
     if DATASOURCE_TYPE == "AzureCognitiveSearch":
@@ -323,7 +379,7 @@ def get_configured_data_source():
             query_type = "semantic"
 
         # Set filter
-        filter = None
+        filter = generateSimpleFilterString(user_id, filenames)
         userToken = None
         if AZURE_SEARCH_PERMITTED_GROUPS_COLUMN:
             userToken = request.headers.get('X-MS-TOKEN-AAD-ACCESS-TOKEN', "")
@@ -333,7 +389,6 @@ def get_configured_data_source():
 
             filter = generateFilterString(userToken)
             logging.debug(f"FILTER: {filter}")
-        
         # Set authentication
         authentication = {}
         if AZURE_SEARCH_KEY:
@@ -504,9 +559,12 @@ def get_configured_data_source():
     return data_source
 
 def prepare_model_args(request_body):
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user['user_principal_id']
     request_messages = request_body.get("messages", [])
+    request_filenames = request_body.get("filenames", [])
     messages = []
-    if not SHOULD_USE_DATA:
+    if request_filenames == []:
         messages = [
             {
                 "role": "system",
@@ -531,9 +589,9 @@ def prepare_model_args(request_body):
         "model": AZURE_OPENAI_MODEL,
     }
 
-    if SHOULD_USE_DATA:
+    if len(request_filenames) > 0:
         model_args["extra_body"] = {
-            "data_sources": [get_configured_data_source()]
+            "data_sources": [get_configured_data_source(user_id, request_filenames)]
         }
 
     model_args_clean = copy.deepcopy(model_args)
@@ -562,6 +620,7 @@ async def send_chat_request(request):
     try:
         azure_openai_client = init_openai_client()
         response = await azure_openai_client.chat.completions.create(**model_args)
+
 
     except Exception as e:
         logging.exception("Exception in send_chat_request")
@@ -1013,6 +1072,52 @@ def chunkString(text, chunk_size,overlap):
 
     return chunked_content_list
 
+async def collect_documents(filenames, container_name):
+    print(f"Collecting documents: {filenames}")
+    try:
+        container_client = init_container_client(container_name)
+    except Exception as e:
+        print(f"Error initializing container client: {e}")
+        raise e
+    print('container client initialized')
+    docString = ''
+    for filename in filenames:
+        blob_client = container_client.get_blob_client(filename)
+        print(f"Downloading document: {filename}")
+        try:
+            download_stream = blob_client.download_blob()
+            if filename.endswith('.docx'):
+                print('reading docx')
+                with io.BytesIO() as output_stream:
+                    download_stream.readinto(output_stream)
+                    doc = docx.Document(output_stream)
+                    for para in doc.paragraphs:
+                        docString += para.text
+            elif filename.endswith('.pdf'):
+                print('reading pdf')
+                try:
+                    AzStorageBlobReader = download_loader("AzStorageBlobReader")
+                except Exception as e:
+                    print(f"Error loading AzStorageBlobReader: {e}")
+                    raise e
+                loader = AzStorageBlobReader(
+                    account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
+                    container_name = container_name,
+                    blob = filename,
+                    credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
+                )
+                documents = loader.load_data()
+                documents = [doc.text for doc in documents if doc]
+                docString += ' '.join(documents)
+            else:
+                blob_bytes = download_stream.readall()
+                docString += blob_bytes.decode('utf-8')
+        
+        except Exception as e:
+            print(f"Error downloading document: {e}")
+    
+    return docString
+
 
 
 async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
@@ -1026,8 +1131,10 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
     )
     return response.choices[0].message.content
 
+
 @bp.websocket('/documentsummary/refine')
 async def refineProgress():
+    print('Refine Progress')
     try:
         
         abort_flag = False
@@ -1037,6 +1144,7 @@ async def refineProgress():
             while not abort_flag:
                 data = await websocket.receive()
                 data = json.loads(data)
+                print(f"Data: {data}")
                 if data.get('command') == 'abort':
                     abort_flag = True
 
@@ -1045,11 +1153,16 @@ async def refineProgress():
         while True:
             data = await websocket.receive()
             data = json.loads(data)
-            document = data['document']
+            filenames = data['filenames']
             prompt = data['prompt']
+            container_name = data['container']
             if not prompt == '':
                 prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
-            
+            try:
+                document = await collect_documents(filenames, container_name)
+            except Exception as e:
+                print(f"Error collecting documents: {e}")
+                return
             try:
                 chunks = chunkString(document, 3500, 100)
                 combined_summaries = ""
@@ -1073,7 +1186,7 @@ async def document_summary_reduce_internal(document, prompt):
         prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
     try:
         chunks = chunkString(document, 4000, 100)
-        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(6000/len(chunks))) for chunk in chunks])
+        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
         combined_summaries = " ".join(chunk_summaries)
         final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
         return jsonify({"response": f'{final_prompt} {combined_summaries}'}), 200
@@ -1084,10 +1197,436 @@ async def document_summary_reduce_internal(document, prompt):
 
 @bp.route("/documentsummary/reduce", methods=["POST"])
 async def documentsummary():
-    document = await request.get_data(as_text=True)
-    prompt = request.headers['Prompt']
-    if not document.strip():
-        return jsonify({"error": "Body not found"}), 400
-    return await document_summary_reduce_internal(document, prompt)
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    storage_container_name = authenticated_user['user_principal_id']
+    data = await request.json
+    filenames = data.get("filenames", [])
+    prompt = data.get("prompt", "")
+
+    print(f"filenames: {filenames}")
+    print(f"prompt: {prompt}")
+    print('Container client initialized')
+    if len(filenames) == 0:
+        return jsonify({"error": "Filenames not found"}), 400
+    print('Collecting documents')
+    docString = await collect_documents(filenames, storage_container_name)
+    print(f"Document: {docString}")
+    return await document_summary_reduce_internal(docString, prompt)
+
+
+
+@bp.route("/create_search_index", methods=["POST"])
+async def create_search_index():
+    print("Python HTTP trigger function processed a request for CreateSearchIndex.")
+    # 'Python HTTP trigger function processed a request for CreateSearchIndex.'
+
+    # """
+    #     If the index already exists, then this function will update it and won't create a new one from scratch.
+    #     If the updates are not compatible with the existing index, it will throw an error.
+
+    #     HTTP call body example:
+    #         {
+    #             "search_index_name": "test-ingrid",
+    #             "synonym_map_name": "test-synonyms"
+    #         }
+    # """
+
+    try:
+        # get the more static environment variables from the function app
+        search_service_name = AZURE_SEARCH_SERVICE
+        search_service_key = AZURE_SEARCH_KEY
+        search_index_name = AZURE_SEARCH_INDEX
+
+        # get Azure credentials
+        credential_MI = DefaultAzureCredential() # use this when MI is set up for Azure AI Search
+        credential = AzureKeyCredential(search_service_key) # use this for free tier Azure AI Search (MI not supported)
+        # connect to Azure Cognitive Search resource
+        service_endpoint = f"https://{search_service_name}.search.windows.net"
+        index_client = SearchIndexClient(service_endpoint, credential)
+
+        # define the fields we want the index to contain
+        fields = [
+            SimpleField(name="id", type=SearchFieldDataType.String, key=True),
+            SearchableField(name="user_id", type=SearchFieldDataType.String, filterable=True),
+            SimpleField(name="doc_url", type=SearchFieldDataType.String),
+            SearchableField(name="filename", type=SearchFieldDataType.String, filterable=True),
+            SearchableField(name="content", type=SearchFieldDataType.String),
+            SearchField(
+                name="content_vector", 
+                type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                searchable=True, 
+                vector_search_dimensions=1536, 
+                vector_search_profile_name="ll-vector-config"
+            ),
+            SearchableField(name="llamaindex_metadata", type=SearchFieldDataType.String),
+            SearchableField(name="llamaindex_doc_id", type=SearchFieldDataType.String, filterable=True)
+        ]
+
+        # For vector search, we want to use the HNSW (Hierarchical Navigable Small World)
+        # algorithm (a type of approximate nearest neighbor search algorithm) with cosine distance.
+        vector_search = VectorSearch(
+            profiles=[
+                VectorSearchProfile(
+                    name="ll-vector-config", 
+                    algorithm_configuration_name="ll-algorithms-config"
+                )
+            ],
+            algorithms=[
+                HnswAlgorithmConfiguration(
+                    name="ll-algorithms-config",
+                    kind="hnsw",
+                    parameters=HnswParameters(metric="cosine")
+                )
+            ]
+        )
+
+        # add a scoring profile to treat the content and vector with higher importance than question
+        scoring_profiles = [
+            {
+                "name": "Hybrid",
+                "functionAggregation": "sum",
+                "text": {
+                    "weights": {
+                    "content": 100,
+                    "content_vector": 100
+                    }
+                },
+                "functions": []
+            }
+        ]
+
+        # Put the search index together
+        index = SearchIndex(
+            name=search_index_name,
+            fields=fields,
+            vector_search=vector_search,
+            scoring_profiles=scoring_profiles
+        )
+
+        # Create the index
+        index_client.create_or_update_index(index)
+        print(f"Index named \"{search_index_name}\" has been created successfully.")
+        return jsonify(
+            {"success": f"Index named \"{search_index_name}\" has been created successfully."}
+            ,200
+        )
+    
+    except Exception as ex:
+        print(f"Processing failed. Exception: {ex}")
+        return jsonify(
+             {"error": f"Processing failed. Exception: {ex}"}, 500
+        )
+
+
+@bp.route("/upload_documents", methods=["POST"])
+async def upload_documents():
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    storage_container_name = authenticated_user['user_principal_id']
+    uploadedFiles = []
+    try:
+
+        files = await request.files
+        if 'file' not in files:
+            print("No files part in the request")
+            return jsonify({"error": "No files part in the request"}), 400
+        file_storage_list = files.getlist('file')
+
+        if not file_storage_list:
+            print("No files selected for uploading")
+            return jsonify({"error": "No files selected for uploading"}), 400
+        
+        for doc in file_storage_list:
+
+            file_name = doc.filename
+            storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
+
+            blob_service_client = BlobServiceClient(
+                account_url=storage_account_url, 
+                credential=AZURE_STORAGE_KEY
+            )
+
+            container_client = blob_service_client.get_container_client(storage_container_name)
+            try:
+                container_client.create_container()
+                print(f"Container '{storage_container_name}' created.")
+            except Exception as e:
+                if "ContainerAlreadyExists" in str(e):
+                    print(f"Container '{storage_container_name}' already exists.")
+                else:
+                    raise e
+            
+            blob_client = blob_service_client.get_blob_client(
+                container=storage_container_name,
+                blob=file_name
+            )
+            print('about to upload: ', file_name)
+            blob_client.upload_blob(doc.stream, overwrite=True)
+            uploadedFiles.append((file_name, blob_client.url))
+            print(f"Successfully uploaded {file_name} at location {blob_client.url}.")
+        result = await addDocuments(uploadedFiles, storage_container_name)
+        print(f"Uploading Documents successful. Result: {result}")
+        return jsonify({"success": f"Uploading Documents successful. Result: {result}"}, 200)
+    except Exception as ex:
+        print(f"Uploading Documents failed. Exception: {ex}")
+        return jsonify({"error": f"Uploading Documents failed. Exception: {ex}"}, 500)
+
+
+async def addDocuments(document_tuples, container_name: str):
+    print('Python HTTP trigger function processed a request for AddDocuments.')
+
+    def convert_doc(documents, blob_name, url):
+        docs = []
+        full_text = []
+        doc_url_list = ['doc_url', 'user_id']
+        # for every page in the document
+        for document in documents:
+            
+            document.text = document.text.replace("\n",".  ").replace('..', '.')
+            document.text = re.sub(r"\s+", " ", document.text)
+            # extract and merge the text from individual pages
+            full_text.append(document.text)
+
+        # create a new Document with metadata fields and all text in one Document
+        docs.append(Document(
+
+            # make sure ID of the document is the pdf name without extension
+            id_ = re.sub(r'[^\w&=.-]', '_', blob_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
+
+            # join the text of the PDF into a single string
+            text = ' '.join(full_text),
+
+            # add metadata fields
+            metadata = {
+                #'title': blob_name.replace('.pdf','').replace('.PDF',''),
+                'user_id': container_name,
+                'doc_url': url,
+                'filename': blob_name,
+            },
+            # don't use the fields added as metadtata in the embedding/llm processes
+            excluded_embed_metadata_keys = doc_url_list,
+            excluded_llm_metadata_keys = doc_url_list
+        ))
+        return docs
+    
+    try:
+        storage_account_name = AZURE_STORAGE_ACCOUNT
+        storage_account_key = AZURE_STORAGE_KEY
+        embedding_deployment_name = AZURE_OPENAI_EMBEDDING_NAME
+        embedding_model_name = AZURE_OPENAI_EMBEDDING_MODEL_NAME
+        llm_deployment_name = AZURE_OPENAI_MODEL
+        llm_model_name = AZURE_OPENAI_MODEL_NAME
+        api_key = AZURE_OPENAI_KEY
+        api_version = AZURE_OPENAI_PREVIEW_API_VERSION
+        azure_endpoint = AZURE_OPENAI_ENDPOINT
+        chunk_size = 1000
+        chunk_overlap = 100
+
+
+        # get Azure credentials
+
+        # connect to an existing Azure Cognitive Search index
+        search_client = init_search_client()
+
+
+        container_client = init_container_client(container_name)
+
+        try:
+            AzStorageBlobReader = download_loader("AzStorageBlobReader")
+        except Exception as e:
+            print(f"Error loading AzStorageBlobReader: {e}")
+            raise e
+
+
+
+
+        # define the llm model (using Azure OpenAI gpt-35-turbo model)
+        llm = AzureOpenAI(
+            model=llm_model_name,
+            deployment_name=llm_deployment_name,
+            api_key=api_key,
+            azure_endpoint=azure_endpoint,
+            api_version=api_version,
+        )
+
+
+        # define the embedding model (using Azure OpenAI text-embedding-ada-002 model)
+        embed_model = AzureOpenAIEmbedding(
+            model=embedding_model_name,
+            deployment_name=embedding_deployment_name,
+            api_key=api_key,
+            azure_endpoint=azure_endpoint,
+            api_version=api_version,
+        )
+
+
+        Settings.llm = llm
+        Settings.embed_model = embed_model
+
+
+        final_nodes = []
+
+        # process policy documents in each location
+        for doc in document_tuples:
+            blob_name = doc[0]
+            url = doc[1]
+            
+            if blob_name.endswith('.docx'):
+                blob_client = container_client.get_blob_client(blob_name)
+                print(f"Downloading document: {blob_name}")
+                try:
+                    download_stream = blob_client.download_blob()
+                    print('reading docx')
+                    with io.BytesIO() as output_stream:
+                        download_stream.readinto(output_stream)
+                        doc = docx.Document(output_stream)
+                        documents = []
+                        for para in doc.paragraphs:
+                            documents.append(para)
+                except Exception as e:
+                    print(f"Error downloading document: {e}")
+
+            else:
+                print(f'Processing {blob_name} with url {url}.')
+                # create the loader
+
+                loader = AzStorageBlobReader(
+                    account_url = f'https://{storage_account_name}.blob.core.windows.net',
+                    container_name = container_name,
+                    blob = blob_name,
+                    credential = storage_account_key # replace this with DefaultAzureCredential() once MI is set up
+                )
+
+                # load in document
+                documents = loader.load_data()
+
+                # convert documents to the correct format for us
+            docs = convert_doc(documents, blob_name, url)
+
+            # define a node parser (specify chunk size and overalap)
+            node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+            # split the documents into nodes (aka chunks)
+            nodes = node_parser.get_nodes_from_documents(docs, show_progress=False)
+
+            # change the node ID to document name + chunk/node number
+            chunk_num = 1
+            for node in nodes:
+                node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
+                chunk_num = chunk_num + 1
+
+            # generate embeddings for each node
+            for node in nodes:
+                node_embedding = embed_model.get_text_embedding(
+                    node.get_content(metadata_mode="all")
+                )
+                node.embedding = node_embedding
+
+            # add all the nodes to a final list that will be added to the search index
+            final_nodes.append(nodes)
+
+        # flatten the list of nodes
+        flat_nodes_list = [item for node in final_nodes for item in node]
+
+        # define additional fields to be added to the search index 
+        # (needs to match the fields added in CreateSearchIndex)
+        metadata_fields = {
+            'user_id': 'user_id',
+            'doc_url': 'doc_url',
+            'filename': 'filename'
+        }
+
+
+        # define the vector store we will be connecting to 
+        # (needs to match the fields added in CreateSearchIndex)
+        vector_store = AzureAISearchVectorStore(
+            search_or_index_client=search_client,
+            filterable_metadata_field_keys=metadata_fields,
+            index_management=IndexManagement.VALIDATE_INDEX,
+            id_field_key="id",
+            chunk_field_key="content",
+            embedding_field_key="content_vector",
+            embedding_dimensionality=1536,
+            metadata_string_field_key="llamaindex_metadata",
+            doc_id_field_key="llamaindex_doc_id"
+        )
+
+        # set the storage context
+        storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+        
+        # load the index
+        index = VectorStoreIndex.from_documents(
+            [],
+            storage_context=storage_context,
+        )
+
+
+        # add the nodes to the vector store/search index
+        index.insert_nodes(flat_nodes_list)
+        ##ERROR HAPPENS HERE : Processing failed. Exception: Object of type set is not JSON serializable
+
+
+
+
+        # get the ID-s of the documents added to the search index
+        node_ids = ', '.join([node.id_ for node in flat_nodes_list])
+
+        print(f"Documents added to the search index. Document IDs: {node_ids}")
+        return f"Documents added to the search index. Document IDs: {node_ids}"
+    
+    except Exception as ex:
+
+        return f"Document addition failed. Exception: {ex}"
+
+
+@bp.route("/get_documents", methods=["GET"])
+async def get_documents():
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    container_client = init_container_client(authenticated_user['user_principal_id'])
+    try:
+        blob_list = container_client.list_blob_names()
+        print('list', blob_list)
+        blob_names = [blob for blob in blob_list]
+        print('blob_names', blob_names)
+        return jsonify(blob_names), 200
+    except Exception as ex:
+        return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
+
+@bp.route("/delete_documents", methods=["POST"])
+async def delete_documents():
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    container_client = init_container_client(authenticated_user['user_principal_id'])
+    request_json = await request.get_json()
+    requested_blobs = request_json.get('filenames', [])
+    print('requested_blobs', requested_blobs)
+    try:
+        search_client = init_search_client()
+        blob_list = container_client.list_blob_names()
+        for blob in requested_blobs:
+            print(f"Deleting {blob}")
+
+            try:
+                container_client.delete_blob(blob)
+            except Exception as ex:
+                print(f"Failed to delete {blob} from storage. Exception: {ex}")
+            try:
+                results = search_client.search(search_text=blob, search_fields=["filename"])
+                for doc in results:
+                    print(doc['id'])
+                    if doc['filename'] == blob:
+                        search_client.delete_documents(documents=[{"id": doc['id']}])
+                        print(f"Deleted {doc['id']} from search index")
+                    else:
+                       Exception('Document not found in search index')
+            except Exception as ex:
+                print(f"Failed to delete {blob} from search index. Exception: {ex}")
+        return jsonify({"success": "All documents deleted"}), 200
+    except Exception as ex:
+        return jsonify({"error": f"Failed to delete documents. Exception: {ex}"}), 500
+
+@bp.route("/get_user_id", methods=["GET"])
+async def get_user_id():
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    return jsonify(authenticated_user['user_principal_id']), 200
 
 app = create_app()
