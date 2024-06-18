@@ -29,7 +29,7 @@ WORKDIR /usr/src/app
 EXPOSE 80  
 
 COPY sshd_config /etc/ssh/
-COPY entrypoint.sh ./
+COPY entrypoint.sh ./start.sh ./
 
 # Start and enable SSH
 RUN apk add openssh \
