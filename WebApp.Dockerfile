@@ -43,5 +43,3 @@ RUN apk add openssh \
 EXPOSE 8000 2222
 
 ENTRYPOINT [ "./entrypoint.sh" ]
-
-CMD ["gunicorn"  , "-b", "0.0.0.0:80", "app:app"]
