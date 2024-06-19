@@ -36,7 +36,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 from azure.core.credentials import AzureKeyCredential
-from azure.identity import DefaultAzureCredential
 from azure.identity.aio import ClientSecretCredential
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from azure.search.documents import SearchClient
@@ -316,8 +315,10 @@ def init_openai_client(use_data=SHOULD_USE_DATA):
 
 
 def init_cosmosdb_client():
+    logging.debug("Initializing CosmosDB client")
     cosmos_conversation_client = None
     if CHAT_HISTORY_ENABLED:
+        logging.debug("COSMOSDB ENABLED")
         try:
             cosmos_endpoint = f'https://{AZURE_COSMOSDB_ACCOUNT}.documents.azure.com:443/'
 
@@ -399,6 +400,7 @@ def get_configured_data_source(user_id, filenames):
             }
         else:
             # If key is not provided, assume AOAI resource identity has been granted access to the search service
+            logging.debug("Using system-assigned managed identity for Azure Cognitive Search")
             authentication = {
                 "type": "system_assigned_managed_identity"
             }
@@ -560,7 +562,12 @@ def get_configured_data_source(user_id, filenames):
     return data_source
 
 def prepare_model_args(request_body):
-    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    logging.debug("PREPARING MODEL ARGS")
+    try:
+        authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    except Exception as e:
+        logging.exception("Exception in get_authenticated_user_details")
+        raise e
     user_id = authenticated_user['user_principal_id']
     request_messages = request_body.get("messages", [])
     request_filenames = request_body.get("filenames", [])
@@ -1239,7 +1246,7 @@ async def create_search_index():
         search_index_name = AZURE_SEARCH_INDEX
 
         # get Azure credentials
-        credential_MI = DefaultAzureCredential() # use this when MI is set up for Azure AI Search
+        # credential_MI = DefaultAzureCredential() # use this when MI is set up for Azure AI Search
         credential = AzureKeyCredential(search_service_key) # use this for free tier Azure AI Search (MI not supported)
         # connect to Azure Cognitive Search resource
         service_endpoint = f"https://{search_service_name}.search.windows.net"
