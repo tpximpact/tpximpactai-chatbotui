@@ -51,11 +51,9 @@ from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
 from llama_index.vector_stores.azureaisearch import AzureAISearchVectorStore, IndexManagement
 from openai import AzureOpenAI as BaseAzureOpenAI
 from llama_index.core import download_loader
-from azure.storage.blob import BlobClient
 
 
 
-configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 from opentelemetry.trace import SpanKind
 tracer = trace.get_tracer(__name__)
 
@@ -103,6 +101,9 @@ load_dotenv()
 DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
+
+logging.debug("APPLICATIONINSIGHTS_CONNECTION_STRING: " + os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
