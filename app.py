@@ -25,11 +25,13 @@ from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
-# from azure.monitor.opentelemetry import configure_azure_monitor
+from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
+from opentelemetry.trace import SpanKind
 
-# from opentelemetry import trace
-# from opentelemetry import metrics
+
+from opentelemetry import trace
+from opentelemetry import metrics
 
 import tiktoken
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -53,9 +55,8 @@ from openai import AzureOpenAI as BaseAzureOpenAI
 from llama_index.readers.azstorage_blob import AzStorageBlobReader
 
 
-
-# from opentelemetry.trace import SpanKind
-# tracer = trace.get_tracer(__name__)
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+tracer = trace.get_tracer(__name__)
 
 
 
@@ -102,8 +103,6 @@ DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
 
-logging.debug("APPLICATIONINSIGHTS_CONNECTION_STRING: " + os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
-# configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
@@ -673,8 +672,8 @@ async def conversation_internal(request_body):
             return jsonify({"error": str(ex)}), 500
 
 
-# meter = metrics.get_meter_provider().get_meter("otel_azure_monitor_counter_demo")
-# counter = meter.create_counter("counter")
+meter = metrics.get_meter_provider().get_meter("otel_azure_monitor_counter_demo")
+counter = meter.create_counter("counter")
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
