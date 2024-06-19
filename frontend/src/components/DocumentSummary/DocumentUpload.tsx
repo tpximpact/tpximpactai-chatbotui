@@ -35,44 +35,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
                 }}})}, [])
 
 
-
-    // const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
-    //     try {
-    //         const timeoutPromise = new Promise<string>((resolve, reject) => {
-    //             setTimeout(() => {
-    //                 reject(new Error('Timeout exceeded'));
-    //             }, 15000); // Timeout after 15 seconds
-            
-                
-    //         const file_names = acceptedFiles.map(file => file.name)
-    //         if (documents.length + file_names.length > 10) {
-    //             alert('You can only upload a maximum of 10 documents')
-    //             return
-    //         }
-            
-    //         const fileList = new DataTransfer();
-    //         for (let i = 0; i < acceptedFiles.length; i++) {
-    //             if (documents.includes(acceptedFiles[i].name)) {
-    //                 alert("You already have a document with the name '" + acceptedFiles[i].name + "'. Please rename the document and try again.")
-    //                 continue
-    //             }
-    //           fileList.items.add(acceptedFiles[i]);
-    //         }
-    //         uploadFiles(fileList.files).then((res) => {
-    //             if (res.status === 200) {
-    //                 setDocuments([...documents, ...file_names])
-    //                 resolve('Documents uploaded successfully')
-    //             }
-    //         });
-    //     });
-    //     } catch (error) {
-    //         console.error('Error reading files:', error);
-    //     } finally {
-    //         console.log('Setting ONDROP loading to false')
-    //         setLoading(false)
-    //     }
-    // }
-
     const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
         setLoading(true);
         setSelectedFiles([]);

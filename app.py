@@ -1461,6 +1461,7 @@ async def addDocuments(document_tuples, container_name: str):
             if blob_name.endswith('.docx'):
                 blob_client = container_client.get_blob_client(blob_name)
                 print(f"Downloading document: {blob_name}")
+                logging.info(f"Downloading document: {blob_name}")
                 try:
                     download_stream = blob_client.download_blob()
                     with io.BytesIO() as output_stream:
@@ -1486,22 +1487,30 @@ async def addDocuments(document_tuples, container_name: str):
                 # load in document
                 documents = loader.load_data()
 
-                # convert documents to the correct format for us
+            # convert documents to the correct format for us
+            print(f"Converting {blob_name} to documents.")
+            logging.debug(f"Converting {blob_name} to documents.")
             docs = convert_doc(documents, blob_name, url)
 
             # define a node parser (specify chunk size and overalap)
             node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
             # split the documents into nodes (aka chunks)
+            print('Splitting the documents into nodes.')
+            logging.debug(f"Splitting the documents into nodes.")
             nodes = node_parser.get_nodes_from_documents(docs, show_progress=False)
 
             # change the node ID to document name + chunk/node number
             chunk_num = 1
+            print('Changing the node IDs.')
+            logging.debug(f"Changing the node IDs.")
             for node in nodes:
                 node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
                 chunk_num = chunk_num + 1
 
             # generate embeddings for each node
+            print('Generating embeddings for each node')
+            logging.debug(f"Generating embeddings for each node")
             for node in nodes:
                 node_embedding = embed_model.get_text_embedding(
                     node.get_content(metadata_mode="all")
@@ -1509,9 +1518,13 @@ async def addDocuments(document_tuples, container_name: str):
                 node.embedding = node_embedding
 
             # add all the nodes to a final list that will be added to the search index
+            print('Adding nodes to final list.')
+            logging.debug(f"Adding {len(nodes)} nodes to final list.")
             final_nodes.append(nodes)
 
         # flatten the list of nodes
+        print('Flattening the list of nodes.')
+        logging.debug(f"Flattening the list of nodes.")
         flat_nodes_list = [item for node in final_nodes for item in node]
 
         # define additional fields to be added to the search index 
@@ -1549,11 +1562,9 @@ async def addDocuments(document_tuples, container_name: str):
 
 
         # add the nodes to the vector store/search index
+        print('Adding nodes to the search index.')
+        logging.debug(f"Adding {len(flat_nodes_list)} nodes to the search index.")
         index.insert_nodes(flat_nodes_list)
-        ##ERROR HAPPENS HERE : Processing failed. Exception: Object of type set is not JSON serializable
-
-
-
 
         # get the ID-s of the documents added to the search index
         node_ids = ', '.join([node.id_ for node in flat_nodes_list])
