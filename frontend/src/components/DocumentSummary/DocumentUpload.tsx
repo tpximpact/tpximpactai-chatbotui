@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
-import { deleteDocuments, getDocuments, uploadFiles } from '../../api'
+import { createSearchIndex, deleteDocuments, getDocuments, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton } from '@fluentui/react'
 import { set } from 'lodash'
@@ -75,13 +75,14 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
 
     const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
         setLoading(true);
+        setSelectedFiles([]);
+        const fileNames = acceptedFiles.map(file => file.name);
+        if (documents.length + fileNames.length > 10) {
+            alert('You can only upload a maximum of 10 documents');
+            return;
+        }
         try {
-            const fileNames = acceptedFiles.map(file => file.name);
-            if (documents.length + fileNames.length > 10) {
-                alert('You can only upload a maximum of 10 documents');
-                return;
-            }
-
+            
             const fileList = new DataTransfer();
             for (const file of acceptedFiles) {
                 if (documents.includes(file.name)) {
@@ -94,9 +95,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
             const res = await uploadFiles(fileList.files);
             if (res.status === 200) {
                 setDocuments(prevDocs => [...prevDocs, ...fileNames]);
+            } else {
+                deleteDocuments(fileNames);
             }
         } catch (error) {
             console.error('Error uploading files:', error);
+            deleteDocuments(fileNames);
         } finally {
             setLoading(false);
         }

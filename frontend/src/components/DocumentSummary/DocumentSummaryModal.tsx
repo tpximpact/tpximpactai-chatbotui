@@ -269,7 +269,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                 <>
                     <div className={styles.modalHeader}>
                         <p>
-                            Document Summarisation
+                            Your Documents
                         </p>
                     </div>
                     <div className={styles.modalContent}>

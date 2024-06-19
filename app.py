@@ -1562,7 +1562,6 @@ async def addDocuments(document_tuples, container_name: str):
         return f"Documents added to the search index. Document IDs: {node_ids}"
     
     except Exception as ex:
-
         return f"Document addition failed. Exception: {ex}"
 
 
