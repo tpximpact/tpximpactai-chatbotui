@@ -73,14 +73,14 @@ export const Answer = ({
             const part_i = citation.part_index ?? (citation.chunk_id ? parseInt(citation.chunk_id) + 1 : '');
             if (truncate && citation.filepath.length > filePathTruncationLimit) {
                 const citationLength = citation.filepath.length;
-                citationFilename = `${citation.filepath.substring(0, 20)}...${citation.filepath.substring(citationLength - 20)} - Part ${part_i}`;
+                citationFilename = `${citation.filepath.substring(0, 20)}...${citation.filepath.substring(citationLength - 20)} - Excerpt ${part_i}`;
             }
             else {
-                citationFilename = `${citation.filepath} - Part ${part_i}`;
+                citationFilename = `${citation.filepath} - Excerpt ${part_i}`;
             }
         }
         else if (citation.filepath && citation.reindex_id) {
-            citationFilename = `${citation.filepath} - Part ${citation.reindex_id}`;
+            citationFilename = `${citation.filepath} - Excerpt ${citation.reindex_id}`;
         }
         else {
             citationFilename = `Citation ${index}`;

@@ -49,7 +49,8 @@ from llama_index.llms.azure_openai import AzureOpenAI
 from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
 from llama_index.vector_stores.azureaisearch import AzureAISearchVectorStore, IndexManagement
 from openai import AzureOpenAI as BaseAzureOpenAI
-from llama_index.core import download_loader
+# from llama_index.core import download_loader
+from llama_index.readers.azstorage_blob import AzStorageBlobReader
 
 
 
@@ -1081,15 +1082,13 @@ def chunkString(text, chunk_size,overlap):
     return chunked_content_list
 
 async def collect_documents(filenames, container_name):
-    print(f"Collecting documents: {filenames}")
     try:
         container_client = init_container_client(container_name)
     except Exception as e:
         print(f"Error initializing container client: {e}")
         raise e
-    print('container client initialized')
-    docString = ''
-    for filename in filenames:
+    docString = f'There are {len(filenames)} documents in this collection:'
+    for index, filename in enumerate(filenames):
         blob_client = container_client.get_blob_client(filename)
         print(f"Downloading document: {filename}")
         try:
@@ -1099,15 +1098,10 @@ async def collect_documents(filenames, container_name):
                 with io.BytesIO() as output_stream:
                     download_stream.readinto(output_stream)
                     doc = docx.Document(output_stream)
+                    docString += f" START OF DOCUMENT {index+1} ({filename}):"
                     for para in doc.paragraphs:
                         docString += para.text
             elif filename.endswith('.pdf'):
-                print('reading pdf')
-                try:
-                    AzStorageBlobReader = download_loader("AzStorageBlobReader")
-                except Exception as e:
-                    print(f"Error loading AzStorageBlobReader: {e}")
-                    raise e
                 loader = AzStorageBlobReader(
                     account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
                     container_name = container_name,
@@ -1116,9 +1110,11 @@ async def collect_documents(filenames, container_name):
                 )
                 documents = loader.load_data()
                 documents = [doc.text for doc in documents if doc]
+                docString += f" START OF DOCUMENT {index+1}, {filename}:"
                 docString += ' '.join(documents)
             else:
                 blob_bytes = download_stream.readall()
+                docString += f" START OF DOCUMENT {index+1}, {filename}:"
                 docString += blob_bytes.decode('utf-8')
         
         except Exception as e:
@@ -1142,7 +1138,6 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
 
 @bp.websocket('/documentsummary/refine')
 async def refineProgress():
-    print('Refine Progress')
     try:
         
         abort_flag = False
@@ -1152,7 +1147,6 @@ async def refineProgress():
             while not abort_flag:
                 data = await websocket.receive()
                 data = json.loads(data)
-                print(f"Data: {data}")
                 if data.get('command') == 'abort':
                     abort_flag = True
 
@@ -1211,14 +1205,9 @@ async def documentsummary():
     filenames = data.get("filenames", [])
     prompt = data.get("prompt", "")
 
-    print(f"filenames: {filenames}")
-    print(f"prompt: {prompt}")
-    print('Container client initialized')
     if len(filenames) == 0:
         return jsonify({"error": "Filenames not found"}), 400
-    print('Collecting documents')
     docString = await collect_documents(filenames, storage_container_name)
-    print(f"Document: {docString}")
     return await document_summary_reduce_internal(docString, prompt)
 
 
@@ -1367,7 +1356,6 @@ async def upload_documents():
                 container=storage_container_name,
                 blob=file_name
             )
-            print('about to upload: ', file_name)
             blob_client.upload_blob(doc.stream, overwrite=True)
             uploadedFiles.append((file_name, blob_client.url))
             print(f"Successfully uploaded {file_name} at location {blob_client.url}.")
@@ -1438,13 +1426,6 @@ async def addDocuments(document_tuples, container_name: str):
 
         container_client = init_container_client(container_name)
 
-        try:
-            AzStorageBlobReader = download_loader("AzStorageBlobReader")
-        except Exception as e:
-            print(f"Error loading AzStorageBlobReader: {e}")
-            raise e
-
-
 
 
         # define the llm model (using Azure OpenAI gpt-35-turbo model)
@@ -1483,7 +1464,6 @@ async def addDocuments(document_tuples, container_name: str):
                 print(f"Downloading document: {blob_name}")
                 try:
                     download_stream = blob_client.download_blob()
-                    print('reading docx')
                     with io.BytesIO() as output_stream:
                         download_stream.readinto(output_stream)
                         doc = docx.Document(output_stream)
@@ -1593,9 +1573,7 @@ async def get_documents():
     container_client = init_container_client(authenticated_user['user_principal_id'])
     try:
         blob_list = container_client.list_blob_names()
-        print('list', blob_list)
         blob_names = [blob for blob in blob_list]
-        print('blob_names', blob_names)
         return jsonify(blob_names), 200
     except Exception as ex:
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
@@ -1606,7 +1584,6 @@ async def delete_documents():
     container_client = init_container_client(authenticated_user['user_principal_id'])
     request_json = await request.get_json()
     requested_blobs = request_json.get('filenames', [])
-    print('requested_blobs', requested_blobs)
     try:
         search_client = init_search_client()
         blob_list = container_client.list_blob_names()

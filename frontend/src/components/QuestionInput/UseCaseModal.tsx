@@ -39,7 +39,6 @@ interface UseCasePageProps extends UseCaseProps {
 
 const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, setPage, sendExampleQuestion}) => {
   const data = useCaseData.useCases[questionNum];
-  console.log(height)
   return (
     <div className={styles.useCasePageContainer} style={{justifyContent:'space-between', alignContent:'space-between', display:'flex', flexDirection:'column'}}>
 

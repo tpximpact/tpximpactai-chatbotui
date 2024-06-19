@@ -14,7 +14,6 @@ export interface GroupedChatHistory {
 const groupByMonth = (entries: Conversation[]) => {
     const groups: GroupedChatHistory[] = [{ month: "Recent", entries: [] }];
     const currentDate = new Date();
-    console.log('NUMBER OF ENTRIES:', entries.length);
     entries.forEach((entry) => {
         const date = new Date(entry.date);
         const daysDifference = (currentDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);

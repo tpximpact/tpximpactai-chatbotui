@@ -273,7 +273,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                         </p>
                     </div>
                     <div className={styles.modalContent}>
-                        If you have a document that’s too big for a single prompt, you can upload it here to have it summarised.<br /> You can select up to 10 documents at once.
+                        If you have a document that’s too big for a single prompt, you can upload it here to have it summarised or ask questions about it. <br /> Only you can see documents you upload.
                     </div>
                     <DocumentUpload handleAskQuestions={handleAskQuestions} handleSummarise={handleSummarise}/>
                 </>

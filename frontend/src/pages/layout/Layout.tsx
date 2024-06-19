@@ -65,7 +65,6 @@ const Layout = () => {
     
         return () => window.removeEventListener('resize', handleResize);
       }, []);
-    console.log('ui title is :',  ui?.title ? ui.title : "TPXimpact AI")
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>

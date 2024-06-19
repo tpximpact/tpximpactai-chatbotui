@@ -125,7 +125,6 @@ const Chat = () => {
             return;
         }
         const userInfoList = await getUserInfo();
-        console.log("userInfoList", userInfoList)
         if (userInfoList.length === 0 && window.location.hostname !== "127.0.0.1") {
             setShowAuthMessage(true);
         }
@@ -473,7 +472,6 @@ const Chat = () => {
                 } else {
                     if (!result.history_metadata) {
                         console.error("Error retrieving data.", result);
-                        console.log("errorMessage", errorMessage)
                         let errorChatMsg: ChatMessage = {
                             id: uuid(),
                             role: ERROR,

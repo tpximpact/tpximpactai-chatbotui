@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {useDropzone} from 'react-dropzone'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
 import { deleteDocuments, getDocuments, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton } from '@fluentui/react'
+import { set } from 'lodash'
 
   interface DocumentUploadProps {
     handleAskQuestions: (filenames: string[]) => void
@@ -15,7 +16,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
     const [loading, setLoading] = useState(true)
     const [documents, setDocuments] = useState<string[]>([])
     const [selectedFiles, setSelectedFiles] = useState<string[]>([])
-
+    const loadingRef = useRef(false)
 
     useEffect(() => {
         getDocuments().then((res) => {
@@ -23,53 +24,84 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
                 if (res.status === 200) {
                     res.json().then((data) => {
                         setDocuments(data)
+                        console.log('Setting useeffect to false')
                         setLoading(false)
                     })
                 }
                 else {
+                    console.log('Setting useeffect to false')
+
                     setLoading(false)
                 }}})}, [])
 
-    const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        setLoading(false)
 
-        setLoading(true)
-        try {
-            const timeoutPromise = new Promise<string>((resolve, reject) => {
-                setTimeout(() => {
-                    reject(new Error('Timeout exceeded'));
-                }, 15000); // Timeout after 15 seconds
+
+    // const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
+    //     try {
+    //         const timeoutPromise = new Promise<string>((resolve, reject) => {
+    //             setTimeout(() => {
+    //                 reject(new Error('Timeout exceeded'));
+    //             }, 15000); // Timeout after 15 seconds
             
                 
-            const file_names = acceptedFiles.map(file => file.name)
-            if (documents.length + file_names.length > 10) {
-                alert('You can only upload a maximum of 10 documents')
-                return
-            }
+    //         const file_names = acceptedFiles.map(file => file.name)
+    //         if (documents.length + file_names.length > 10) {
+    //             alert('You can only upload a maximum of 10 documents')
+    //             return
+    //         }
             
-            const fileList = new DataTransfer();
-            for (let i = 0; i < acceptedFiles.length; i++) {
-                console.log(acceptedFiles[i].name, documents)
-                if (documents.includes(acceptedFiles[i].name)) {
-                    alert("You already have a document with the name '" + acceptedFiles[i].name + "'. Please rename the document and try again.")
-                    continue
-                }
-              fileList.items.add(acceptedFiles[i]);
+    //         const fileList = new DataTransfer();
+    //         for (let i = 0; i < acceptedFiles.length; i++) {
+    //             if (documents.includes(acceptedFiles[i].name)) {
+    //                 alert("You already have a document with the name '" + acceptedFiles[i].name + "'. Please rename the document and try again.")
+    //                 continue
+    //             }
+    //           fileList.items.add(acceptedFiles[i]);
+    //         }
+    //         uploadFiles(fileList.files).then((res) => {
+    //             if (res.status === 200) {
+    //                 setDocuments([...documents, ...file_names])
+    //                 resolve('Documents uploaded successfully')
+    //             }
+    //         });
+    //     });
+    //     } catch (error) {
+    //         console.error('Error reading files:', error);
+    //     } finally {
+    //         console.log('Setting ONDROP loading to false')
+    //         setLoading(false)
+    //     }
+    // }
+
+    const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
+        setLoading(true);
+        try {
+            const fileNames = acceptedFiles.map(file => file.name);
+            if (documents.length + fileNames.length > 10) {
+                alert('You can only upload a maximum of 10 documents');
+                return;
             }
-            uploadFiles(fileList.files).then((res) => {
-                console.log(res)
-                if (res.status === 200) {
-                    setDocuments([...documents, ...file_names])
-                    resolve('Documents uploaded successfully')
+
+            const fileList = new DataTransfer();
+            for (const file of acceptedFiles) {
+                if (documents.includes(file.name)) {
+                    alert(`You already have a document with the name '${file.name}'. Please rename the document and try again.`);
+                    continue;
                 }
-            });
-        });
+                fileList.items.add(file);
+            }
+
+            const res = await uploadFiles(fileList.files);
+            if (res.status === 200) {
+                setDocuments(prevDocs => [...prevDocs, ...fileNames]);
+            }
         } catch (error) {
-            console.error('Error reading files:', error);
+            console.error('Error uploading files:', error);
         } finally {
             setLoading(false);
         }
-    }, [setLoading, loading, documents, setDocuments]);
+    };
+
     
     const handleDocSelect = (doc: string, e:any) => {
         e.stopPropagation();
@@ -89,7 +121,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
                     setSelectedFiles([])
                     setLoading(false)
                 } else {
-                    console.log(res)
                     alert('Error deleting documents')
                     setLoading(false)
                 }
@@ -128,6 +159,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
         maxFiles: 10,
         multiple: true,
         noDragEventsBubbling: true,
+        
     });
           
 
