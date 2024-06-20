@@ -1405,11 +1405,13 @@ async def process_documents():
                                 download_stream.readinto(output_stream)
                                 doc = docx.Document(output_stream)
                                 documents = []
+                                await websocket.send('2')
                                 for para in doc.paragraphs:
                                     documents.append(para)
                         except Exception as e:
                             print(f"Error downloading document: {e}")
-
+                            await websocket.send(f"error: {e}")
+                            return
                     else:
                         print(f'Processing {blob_name} with url {url}.')
                         # create the loader
@@ -1420,9 +1422,15 @@ async def process_documents():
                             blob = blob_name,
                             credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
                         )
-
                         # load in document
-                        documents = loader.load_data()
+                        await websocket.send('2')
+                        try:
+                            documents = loader.load_data()
+                        except Exception as e:
+                            print(f"Error loading document: {e}")
+                            await websocket.send(f"error")
+                            return
+                    await websocket.send('3')
                     if abort_flag:
                         return
 
@@ -1447,12 +1455,12 @@ async def process_documents():
                         chunk_num = chunk_num + 1
 
                     # generate embeddings for each node
-                    progress = 2
+                    progress = 4
                     if len(nodes) > 50:
                         interval = math.floor(len(nodes)/5)
                     else: 
                         interval = len(nodes)
-                        progress = 7
+                        progress = 9
                     for index, node in enumerate(nodes):
                         if index % interval == 0:
                             if abort_flag:
@@ -1519,7 +1527,9 @@ async def process_documents():
                     return
                 await websocket.send(f"done: Document IDs added to the search index: {node_ids}")
             except Exception as e:
-                print(f"Error collecting documents: {e}")
+                print(f"Error adding documents: {e}")
+                await websocket.send(f"error: {e}")
+
                 return
     finally:
         await websocket.close()

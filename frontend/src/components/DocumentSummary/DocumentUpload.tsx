@@ -89,7 +89,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
         ws.onmessage = (event) => {
             setProgress(event.data);
-            if (event.data.startsWith('done:')) {
+            if (event.data.startsWith('error:')) {
+                console.log('Error processing document:', event.data);
+                ws.close();
+                deleteDocuments(processing.map((doc) => doc[0]));
+                alert('There was an error processing the document. Please try again.');
+            } else if (event.data.startsWith('done:')) {
                 ws.close();
                 const fileNames = processing.map((doc) => doc[0]);
                 setDocuments((prevDocs) => [...prevDocs, ...fileNames]);
@@ -140,7 +145,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             if (res.status === 200) {
                 const resJson = await res.json();
                 initiateWebSocket(resJson[0]['Documents']);                
-                setProgress(1/7)
+                setProgress(1/9)
             } else {
                 deleteDocuments(fileNames);
             }
