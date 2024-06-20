@@ -3,7 +3,7 @@ import { Modal, IconButton, on } from '@fluentui/react';
 import styles from './DocumentSummaryModal.module.css'; 
 import DocumentUpload from './DocumentUpload';
 import { ShareButton } from '../common/Button';
-import { documentSummaryReduceApi, getUserIdentity } from '../../api';
+import { deleteDocuments, documentSummaryReduceApi, getUserIdentity } from '../../api';
 import LoadingBar from '../LoadingBar';
 import Loading from '../Loading';
 
@@ -17,6 +17,8 @@ interface CustomModalProps {
 }
 
 const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onSend, conversationId, setFilenames, filenames }) => {
+    const [uploadWS, setUploadWS] = React.useState<WebSocket | null>(null);
+    const [uploading, setUploading] = React.useState<string[]>([]);
     const [summarising, setSummarising] = React.useState<string[]>([]);
     const [method, setMethod] = React.useState<string>('');
     const [prompt, setPrompt] = React.useState<string>('');
@@ -24,6 +26,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
     const [refining, setRefining] = React.useState<boolean>(false);
     const [reducing, setReducing] = React.useState<boolean>(false);
     const [refineWS, setRefineWS] = React.useState<WebSocket | null>(null);
+
     const reset = () => {
         setTimeout(() => {
         setSummarising([]);
@@ -33,6 +36,8 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
         setRefining(false);
         setReducing(false);
         setRefineWS(null);
+        setUploadWS(null);
+        setUploading([]);
         },1000);
     }
 
@@ -134,7 +139,16 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                 onClose();
                 reset();
             }
-        } else {
+        } else if(uploading.length > 0){
+            const userConfirmed = confirm('Are you sure you want to cancel uploading?');
+            if (userConfirmed) {
+                uploadWS!.send(JSON.stringify({ command: 'abort' }));
+                deleteDocuments(uploading)
+                onClose();
+                reset();
+            }
+        }
+            else {
             reset();
             onClose();
         }
@@ -154,21 +168,32 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                 ariaLabel="Close"
                 onClick={handleClose}
                 styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}
-                className={styles.closeButton} // Apply custom CSS class for close button
+                className={styles.closeButton} 
                 />
 
-                {summarising.length > 0 ? 
+                {uploading.length > 0 ? 
+                    <>
+                        <div className={styles.modalHeader}>
+                            <p>
+                                Uploading...
+                            </p>
+                        </div>
+                        <div className={styles.loadingBarContainer}>
+                            <LoadingBar progress={progress} />
+                        </div>
+                    </>
+                :            
+                summarising.length > 0 ? 
                 method ? 
                 refining ?
                 <>
                     <div className={styles.modalHeader}>
-                                    <p>
-                                        Summarising...
-                                    </p>
+                        <p>
+                            Summarising...
+                        </p>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', alignContent: 'center', alignItems: 'center', padding:'13% 7%' }}>
-
-                                        <LoadingBar progress={progress} />
+                    <div className={styles.loadingBarContainer}>
+                            <LoadingBar progress={progress} />
                     </div>
                 </>
                 :
@@ -179,7 +204,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                         Summarising...
                     </p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', alignContent: 'center', alignItems: 'center', paddingTop:'3%', paddingBottom:'9%'}}>
+                <div className = {styles.loadingContainer}>
                     <Loading size = {50} color='black' />
                 </div>
                 </>
@@ -203,17 +228,14 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     </strong>
                     </p>
                 </div>
-                    <input style= {{
-                        width: '100%',
-                        padding: '12px 20px',
-                        margin: '8px 0',
-                        display: 'inline-block',
-                        border: '1px solid #000000',
-                        borderRadius: '20px',
-                        boxSizing: 'border-box',
-                        
-                    }} type="text" placeholder="Add a prompt (or leave blank and press summarise)" onChange={(e) => setPrompt(e.target.value)}></input>
-                    <div style ={{display: 'flex', flexDirection:'row', justifyContent:'space-between', alignContent:'space-between', alignItems:'space-between', width:'100%', marginTop:'10px'}}>
+                    <input 
+                        className={styles.promptInput} 
+                        type="text" 
+                        placeholder="Add a prompt (or leave blank and press summarise)" 
+                        onChange={(e) => setPrompt(e.target.value)}
+                    />
+                    
+                    <div className = {styles.promptBottomBarContainer}>
                         <IconButton
                             onMouseOver={undefined}
                             iconProps={{ iconName: 'Back', styles: { root: { color: 'black' } } }}
@@ -275,10 +297,15 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     <div className={styles.modalContent}>
                         If you have a document that’s too big for a single prompt, you can upload it here to have it summarised or ask questions about it. <br /> Only you can see documents you upload.
                     </div>
-                    <DocumentUpload handleAskQuestions={handleAskQuestions} handleSummarise={handleSummarise}/>
+                    <DocumentUpload 
+                    handleAskQuestions={handleAskQuestions} 
+                    handleSummarise={handleSummarise}
+                    setUploadWS={setUploadWS}
+                    setUploading={setUploading}
+                    setProgress={setProgress}
+                    />
                 </>
                 }
-
             </div>
         </Modal>
     );

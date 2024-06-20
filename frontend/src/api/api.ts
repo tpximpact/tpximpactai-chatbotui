@@ -438,6 +438,7 @@ export const uploadFiles = async (files: FileList): Promise<Response> => {
 }
 
 
+
 export const getUserIdentity = async (): Promise<Response> => {
     const response = await fetch("/get_user_id", {
         method: "GET",

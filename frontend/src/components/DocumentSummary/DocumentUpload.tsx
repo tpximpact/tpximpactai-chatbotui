@@ -2,21 +2,56 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
-import { createSearchIndex, deleteDocuments, getDocuments, uploadFiles } from '../../api'
+import { createSearchIndex, deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton } from '@fluentui/react'
-import { set } from 'lodash'
+import styles from './DocumentUpload.module.css'
 
+const baseStyle = {
+    borderColor: 'black',
+    borderWidth: 1,
+    margin: '30px 1px',
+    borderRadius: '50px',
+    outline: 'none',
+    transition: 'border .24s ease-in-out',
+    cursor: 'pointer',
+    height:'250px',
+    width:'90%',
+    overflow: 'auto',
+  };
+  
+  const focusedStyle = {
+    borderColor: 'black'
+  };
+  
+  const acceptStyle = {
+    borderColor: 'green'
+  };
+  
+  const rejectStyle = {
+    borderColor: '#ff1744'
+  };
+
+  
   interface DocumentUploadProps {
     handleAskQuestions: (filenames: string[]) => void
     handleSummarise: (filenames: string[]) => void
+    setUploadWS: React.Dispatch<React.SetStateAction<WebSocket | null>>
+    setUploading: React.Dispatch<React.SetStateAction<string[]>>
+    setProgress: React.Dispatch<React.SetStateAction<number>>
 }
 
-const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, handleSummarise}) => {
+const DocumentUpload: React.FC<DocumentUploadProps> = ({
+    handleAskQuestions, 
+    handleSummarise, 
+    setUploadWS,
+    setProgress,
+    setUploading,
+}) => {
     const [loading, setLoading] = useState(true)
     const [documents, setDocuments] = useState<string[]>([])
     const [selectedFiles, setSelectedFiles] = useState<string[]>([])
-    const loadingRef = useRef(false)
+
 
     useEffect(() => {
         getDocuments().then((res) => {
@@ -24,19 +59,67 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
                 if (res.status === 200) {
                     res.json().then((data) => {
                         setDocuments(data)
-                        console.log('Setting useeffect to false')
                         setLoading(false)
                     })
                 }
                 else {
-                    console.log('Setting useeffect to false')
-
                     setLoading(false)
                 }}})}, [])
+                
+    const initiateWebSocket = async (processing: string[]) => {
+        const fetchData = async () => {
+            try {
+                const response = await getUserIdentity();
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                return data; 
+            } catch (error) {
+                console.error('Error fetching user identity:', error);
+            }
+        };
+
+        const user_id = await fetchData();
+        if (!user_id) {
+            return;
+        }
+        const ws = new WebSocket("/process_documents");
+        setUploadWS(ws);
+
+        ws.onmessage = (event) => {
+            setProgress(event.data);
+            if (event.data.startsWith('done:')) {
+                ws.close();
+                const fileNames = processing.map((doc) => doc[0]);
+                setDocuments((prevDocs) => [...prevDocs, ...fileNames]);
+                setUploading([]);
+                setProgress(0);
+            } else {
+                setProgress(Number(event.data)/7)
+            }
+            };
+        ws.onopen = () => {
+            const data = {
+                documents: processing,
+                container: user_id,
+            };
+            const jsonData = JSON.stringify(data);
+            ws.send(jsonData);
+        };
+    };
 
 
+    const handleSelectedButton = async () => {
+        if (selectedFiles.length  < documents.length) {
+            setSelectedFiles(documents);
+        }
+        else {
+            setSelectedFiles([]);
+        }
+    }
     const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
-        setLoading(true);
+        // Upload ffiles then initiate websocket to add the files to the search index and recieve progress updates
         setSelectedFiles([]);
         const fileNames = acceptedFiles.map(file => file.name);
         if (documents.length + fileNames.length > 10) {
@@ -44,7 +127,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
             return;
         }
         try {
-            
             const fileList = new DataTransfer();
             for (const file of acceptedFiles) {
                 if (documents.includes(file.name)) {
@@ -53,10 +135,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
                 }
                 fileList.items.add(file);
             }
-
+            setUploading(fileNames);
             const res = await uploadFiles(fileList.files);
             if (res.status === 200) {
-                setDocuments(prevDocs => [...prevDocs, ...fileNames]);
+                const resJson = await res.json();
+                initiateWebSocket(resJson[0]['Documents']);                
+                setProgress(1/7)
             } else {
                 deleteDocuments(fileNames);
             }
@@ -64,7 +148,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
             console.error('Error uploading files:', error);
             deleteDocuments(fileNames);
         } finally {
-            setLoading(false);
         }
     };
 
@@ -142,243 +225,157 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({handleAskQuestions, hand
         isDragReject,
         documents.length
       ]);
-    
+      const isButtonDisabled = selectedFiles.length === 0;
+      const buttonColor = isButtonDisabled ? '#BDBDBD' : COLOURS.black;
+
 
     return (
-        <div style = {{height:'100%', width:'100%', display:'flex', flexDirection:'column'}}>
+        <div className={styles.container}>
             { 
             loading ? 
-            <div style = {{justifyContent:'center', alignContent:'center', height:'100%', width:'100%', alignItems:'center', display:'flex'}}>
+            <div className={styles.loadingContainer}>
 
-                <div style= {{
-                    height:'250px',
-                    margin:'30px',
-                    padding: '60px',
-                    borderWidth: 2,
-                    paddingTop: '100px',   
-                }}>
+                <div className={styles.loadingBox}>
                     <Loading size = {50} color='black'/> 
                 </div>
             </div>
             :
-            <div style = {{ display:'flex', flexDirection:'row', width:'100%'}}>
+            <div className={styles.fileUploadContainer}>
                     <div {...getRootProps({style})}>
                         <input {...getInputProps()} />
 
                     {isDragActive ?
-                        <div style = {{justifyContent:'center', alignContent:'center', height:'100%', width:'100%', alignItems:'center', display:'flex', padding: '60px 30px'
-                        }}>
-                            <p style = {{textAlign:'center'}}>
+                        <div className={styles.dragZoneContainer}>
+                            <p className={styles.dragZoneText}>
                                 Drop the file(s) here...
                             </p> 
                         </div>
                     :
                     documents.length > 0 ?
-                        <div style={{ display: 'flex', flexDirection: 'row', padding: '10px', flexWrap:'wrap' , width:'100%'}}>
+                        <div className={styles.documentsContainer}>
                             {documents.map((doc, index) => {
                                 return (
-                                    <div key={index} style={{ display: 'flex', margin: '5px', width:110 }} onClick={(e) => handleDocSelect(doc, e)}>
+                                    <div key={index} className={styles.document} onClick={(e) => handleDocSelect(doc, e)}>
                                         <FileIcon title={doc} key={index} selected={selectedFiles.includes(doc)}/>
                                     </div>
                                 )
                             })}
                         </div>
                     :
-                        <div style = {{justifyContent:'center', alignContent:'center', height:'100%', width:'100%', alignItems:'center', display:'flex', padding: '60px 30px'
-                        }}>
+                        <div className={styles.dropzoneEmpty}>
 
-                            <p style={{ textAlign: 'center' }}>Drag and drop the document(s) you want to summarise here.<br />
+                            <p className={styles.dropzoneText}>Drag and drop the document(s) you want to summarise here.<br />
                                     (Accepted formats are .pdf, .docx, .txt)
                                     <br />
                                     <br />
                                     or
                                     <br />
                                     <br />
-                                    <span style={{ color: COLOURS.blue, textDecoration: 'underline', cursor: 'pointer' }}>Browse</span>
+                                    <span className={styles.browseLink}>Browse</span>
                             </p>
                         </div>
                     }
                 </div>
-                <div style={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', paddingLeft:'5%'}}>
-                        {
-                        selectedFiles.length == 0 ?
-                            <div style= {{cursor:'pointer',  border: '1px solid #141414', display:'flex',borderWidth:1, borderRadius:15, flexDirection:'column', padding:'10px 5px 10px 5px', margin:'0px 10px 10px 10px', justifyContent:'center', alignContent:'center', width:80, boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12)'
-                            }}>
-                                <span style={{fontWeight:'bold', textAlign:'center', fontSize:18}}>{documents.length}/10</span>
-                                <span style={{fontSize:12, textAlign:'center'}}>Documents</span>
-                             </div>
-                            :
-                            <div style= {{cursor:'pointer', border: '1px solid #141414', display:'flex', borderWidth:1, borderRadius:15, flexDirection:'column', backgroundColor:COLOURS.green,  padding:'10px 5px 10px 5px',  margin:'0px 10px 10px 10px', justifyContent:'center', alignContent:'center',  width:80, boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12)'}}>
-                                <span style={{fontWeight:'bold',  textAlign:'center',  fontSize:18}}>{selectedFiles.length}/{documents.length}</span>
-                                <span style={{fontSize:12, textAlign:'center'}}>Selected</span>
-                             </div>
-                        }
-                        <CommandBarButton
-                                    role="button"
-                                    styles={{
-                                        icon: {
-                                            color: 'black',
-                                        },
-                                        iconHovered: {
-                                            color: 'black',
-                                        },
-                                        iconDisabled: {
-                                            color: "#BDBDBD !important",
-                                        },
-                                        root: {
-                                            background: "#FFFFFF"
-                                        },
-                                        rootHovered: {
-                                            background: COLOURS.purple,
-                                        },
-                                        rootDisabled: {
-                                            background: "#F0F0F0"
-                                        }
-                                    }}
-                                    style={{    
-                                        boxSizing: 'border-box',
-                                        display: 'flex',
-                                        flexDirection: 'row',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        width: '50px',
-                                        height: '50px',
-                                        color: '#FFFFFF',
-                                        borderRadius: '50px',
-                                        border: '1px solid #141414',
-                                        borderBottomWidth: '4px',
-                                        margin: '10px',
-                                                                          }}
-                                    iconProps={{ iconName: 'Upload' }}
-                                    onClick={()=> {inputRef.current?.click()}}
-                                    disabled={documents.length > 9}
-                                    aria-label="document summary button"
-                            />
-                            <CommandBarButton
-                                    role="button"
-                                    styles={{
-                                        icon: {
-                                            color: 'black',
-                                        },
-                                        iconHovered: {
-                                            color: 'black',
-                                        },
-                                        iconDisabled: {
-                                            color: "#BDBDBD !important",
-                                        },
-                                        root: {
-                                            background: "#FFFFFF"
-                                        },
-                                        rootHovered: {
-                                            background: '#ffcfca',
-                                        },
-                                        rootDisabled: {
-                                            background: "#F0F0F0"
-                                        }
-                                    }}
-                                    style={{    
-                                        boxSizing: 'border-box',
-                                        display: 'flex',
-                                        flexDirection: 'row',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        width: '50px',
-                                        height: '50px',
-                                        color: '#FFFFFF',
-                                        borderRadius: '50px',
-                                        border: '1px solid #141414',
-                                        borderBottomWidth: '4px',
-                                        margin: '10px',
-                                                                          }}
-                                    iconProps={{ iconName: 'Delete' }}
-                                    onClick={handleDelete}
-                                    disabled={selectedFiles.length === 0}
-                                    aria-label="document summary button"
-                            />
-                            
-
+                <div className={styles.controlPanel}>
+                {
+                    selectedFiles.length === 0 ?
+                    <div className={`${styles.documentCounter} ${styles.documentCounterNormal}`} onClick={handleSelectedButton}>
+                        <span className={styles.documentCounterText}>{documents.length}/10</span>
+                        <span className={styles.documentCounterTextSmall}>Documents</span>
+                    </div>
+                    :
+                    <div className={`${styles.documentCounter} ${styles.documentCounterSelected}`} onClick={handleSelectedButton}>
+                        <span className={styles.documentCounterText}>{selectedFiles.length}/{documents.length}</span>
+                        <span className={styles.documentCounterTextSmall}>Selected</span>
+                    </div>
+                }
+            <CommandBarButton
+                        role="button"
+                        styles={{
+                            icon: {
+                                color: 'black',
+                            },
+                            iconHovered: {
+                                color: 'black',
+                            },
+                            iconDisabled: {
+                                color: "#BDBDBD !important",
+                            },
+                            root: {
+                                background: "#FFFFFF"
+                            },
+                            rootHovered: {
+                                background: COLOURS.purple,
+                            },
+                            rootDisabled: {
+                                background: "#F0F0F0"
+                            }
+                        }}
+                        className={styles.commandBarButton}
+                        iconProps={{ iconName: 'Upload' }}
+                        onClick={()=> {inputRef.current?.click()}}
+                        disabled={documents.length > 9}
+                        aria-label="document summary button"
+                />
+                <CommandBarButton
+                        role="button"
+                        styles={{
+                            icon: {
+                                color: 'black',
+                            },
+                            iconHovered: {
+                                color: 'black',
+                            },
+                            iconDisabled: {
+                                color: "#BDBDBD !important",
+                            },
+                            root: {
+                                background: "#FFFFFF"
+                            },
+                            rootHovered: {
+                                background: COLOURS.salmon,
+                            },
+                            rootDisabled: {
+                                background: "#F0F0F0"
+                            }
+                        }}
+                        className={styles.commandBarButton}
+                        iconProps={{ iconName: 'Delete' }}
+                        onClick={handleDelete}
+                        disabled={selectedFiles.length === 0}
+                        aria-label="document summary button"
+                />  
                 </div>
             </div>
             }
-            <div style= {{width:'100%', flexDirection:'row', display:'flex', justifyContent:'center'}}>
-                <div style= {{
-                    border: '1px solid #141414', 
-                    display:'flex',
-                    borderWidth:1, 
-                    borderRadius:25, 
-                    flexDirection:'column', 
-                    padding:'20px', 
-                    margin:'0px 10px 10px 10px', 
-                    justifyContent:'center', 
-                    alignContent:'center', 
-                    boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12)',
-                    width:'50%',
-                    borderColor: selectedFiles.length > 0 ? COLOURS.black : '#BDBDBD'
-                                }}
-                    onClick={selectedFiles.length > 0 ? onAskQuestions : undefined}>
-                    <span style={{
-                        fontWeight:'bold', 
-                        textAlign:'center', 
-                        fontSize:16, 
-                        fontFamily:'DMSans-Regular',
-                        color: selectedFiles.length > 0 ? COLOURS.black : '#BDBDBD'
-                        }}>Ask questions about {selectedFiles.length > 1 ? 'these documents' : 'this document'} </span>
-                    </div>
-
-                    <div style= {{  
-                        border: '1px solid #141414', 
-                        display:'flex',
-                        borderWidth:1, 
-                        borderRadius:25, 
-                        flexDirection:'column', 
-                        padding:'20px', 
-                        margin:'0px 10px 10px 10px', 
-                        justifyContent:'center', 
-                        alignContent:'center', 
-                        boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12)',
-                        width:'50%',
-                        borderColor: selectedFiles.length > 0 ? COLOURS.black : '#BDBDBD'
-                                }}
-                        onClick={selectedFiles.length > 0 ? onSummarise : undefined}>
-                    <span style={{
-                        fontWeight:'bold', 
-                        textAlign:'center', 
-                        fontSize:16, 
-                        fontFamily:'DMSans-Regular',
-                        color: selectedFiles.length > 0 ? COLOURS.black : '#BDBDBD'
-                    }}
-                        >
+            <div className={styles.bottomRow}>
+                <div
+                    className={`${styles.button} ${isButtonDisabled ? styles.buttonDisabled : ''}`}
+                    onClick={!isButtonDisabled ? onAskQuestions : undefined}
+                    style={{ borderColor: buttonColor }}
+                >
+                    <span
+                        className={`${styles.buttonText} ${isButtonDisabled ? styles.buttonTextDisabled : ''}`}
+                        style={{ color: buttonColor }}
+                    >                        
+                        Ask questions about {selectedFiles.length > 1 ? 'these documents' : 'this document'} 
+                    </span>
+                </div>
+                <div
+                    className={`${styles.button} ${isButtonDisabled ? styles.buttonDisabled : ''}`}
+                    onClick={!isButtonDisabled ? onSummarise : undefined}
+                    style={{ borderColor: buttonColor }}
+                >
+                    <span
+                        className={`${styles.buttonText} ${isButtonDisabled ? styles.buttonTextDisabled : ''}`}
+                        style={{ color: buttonColor }}
+                    >
                             Summarise {selectedFiles.length > 1 ? 'these documents' : 'this document'} 
                     </span>
-
-                    </div>
                 </div>
+            </div>
         </div>
     );
 }
 export default DocumentUpload
 
-const baseStyle = {
-    margin: '30px 1px',
-    borderWidth: 1,
-    borderRadius: '50px',
-    borderColor: 'black',
-    outline: 'none',
-    transition: 'border .24s ease-in-out',
-    cursor: 'pointer',
-    height:'250px',
-    width:'90%',
-    overflow: 'auto',
-  };
-  
-  const focusedStyle = {
-    borderColor: 'black'
-  };
-  
-  const acceptStyle = {
-    borderColor: 'green'
-  };
-  
-  const rejectStyle = {
-    borderColor: '#ff1744'
-  };

@@ -13,6 +13,23 @@
 
 }
 
+.loadingBarContainer {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    padding: 13% 7%;
+}
+
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    padding-top: 3%;
+    padding-bottom: 9%;
+  }
+
 .modalContent {
     font-family: "DMSans-Regular";
 }
@@ -38,14 +55,32 @@
     border-radius: 30px;
     margin: 25px 10px 5px 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease; /* Add transition property */
+    transition: transform 0.2s ease;
     cursor: pointer; 
 }
 
 .methodBubble:hover {
-    transform: scale(1.05); /* Apply scaling effect on hover */
+    transform: scale(1.05); 
 }
-  
-  
-/* Document Upload  */
+
+.promptInput {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #000000;
+    border-radius: 20px;
+    box-sizing: border-box;
+}
+
+.promptBottomBarContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-content: space-between;
+    align-items: space-between;
+    width: 100%;
+    margin-top: 10px;
+}
+  /* Document Upload  */
 

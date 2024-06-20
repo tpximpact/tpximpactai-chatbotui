@@ -41,10 +41,8 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
-import { HistoryArrowButton } from "../../components/common/Button";
 import GuideanceModal from "../../components/GuidanceModal/GuidedanceModal";
 import DocumentSummaryModal from "../../components/DocumentSummary/DocumentSummaryModal";
-import DocumentUpload from "../../components/DocumentSummary/DocumentUpload";
 import Loading from "../../components/Loading";
 
 const enum messageStatus {
@@ -704,27 +702,24 @@ const Chat = () => {
                     <div className={styles.chatContainer}>
 
                     <div
-  style={{
-    transform: 'scaleX(0.7)',
-    position: "absolute",
-    top: '45%',
-    left: "0px",
-    display: appStateContext?.state?.isChatHistoryOpen ? "none" : "block",
- // Add cursor style to indicate it's clickable
-  }}
->
-  {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && (
-    <img
-    onClick={handleHistoryClick}
+                        style={{
+                            transform: 'scaleX(0.7)',
+                            position: "absolute",
+                            top: '45%',
+                            left: "0px",
+                            display: appStateContext?.state?.isChatHistoryOpen ? "none" : "block",
+                        }}
+                        >
+                        {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && (
+                            <img
+                            onClick={handleHistoryClick}
 
-      src={appStateContext?.state?.isChatHistoryOpen ? arrowLeft : arrowRight}
-      alt="Arrow"
-      style={{ width: '70px', height: 'auto',cursor: 'pointer', padding:'20px'}}
-    />
-  )}
-</div>
-
-
+                            src={appStateContext?.state?.isChatHistoryOpen ? arrowLeft : arrowRight}
+                            alt="Arrow"
+                            style={{ width: '70px', height: 'auto',cursor: 'pointer', padding:'20px'}}
+                            />
+                        )}
+                        </div>
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
                                 <div style = {{display:'flex', flexDirection:'row', position:'relative'}}>
@@ -738,7 +733,7 @@ const Chat = () => {
                                     className={styles.chatIcon}
                                     aria-hidden="true"
                                     />
-                                 <img
+                                    <img
                                     src={ui?.chat_logo ? ui.chat_logo : Butterfly}
                                     className={styles.chatIconSecondary}
                                     aria-hidden="true"
@@ -766,9 +761,9 @@ const Chat = () => {
                                 )}
                                 </h2>
                                 <GuideanceModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                    />
+                                    isOpen={isModalOpen}
+                                    onClose={closeModal}
+                                />
                             </Stack>
 
                         ) : (

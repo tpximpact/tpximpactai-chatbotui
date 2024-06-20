@@ -1,3 +1,4 @@
+import math
 import asyncio
 import copy
 import json
@@ -1063,8 +1064,6 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]['content']
     
-
-    
 def chunkString(text, chunk_size,overlap):
     SENTENCE_ENDINGS = [".", "!", "?"]
     WORDS_BREAKS = list(reversed([",", ";", ":", " ", "(", ")", "[", "]", "{", "}", "\t", "\n"]))
@@ -1121,8 +1120,6 @@ async def collect_documents(filenames, container_name):
     
     return docString
 
-
-
 async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
     azure_openai_client = init_openai_client(use_data=False)
     response = await azure_openai_client.chat.completions.create(
@@ -1133,7 +1130,6 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
         max_tokens=max_tokens
     )
     return response.choices[0].message.content
-
 
 @bp.websocket('/documentsummary/refine')
 async def refineProgress():
@@ -1175,26 +1171,13 @@ async def refineProgress():
                         break
                     await websocket.send(f"{chunks.index(chunk)+1}/{len(chunks)}")
                     combined_summaries = await summarize_chunk(combined_summaries + chunk, 4000)
-                final_prompt = f'Tell me in as much detail as possible what the following document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+                final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
                 await websocket.send(f"done:{final_prompt} {combined_summaries} {chunks[len(chunks)-1]}")
             except Exception as e:
                 print(f"Error  reading document: {e}")
     finally:
         await websocket.close()
-    
-async def document_summary_reduce_internal(document, prompt):
-    if not prompt == '':
-        prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
-    try:
-        chunks = chunkString(document, 4000, 100)
-        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
-        combined_summaries = " ".join(chunk_summaries)
-        final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
-        return jsonify({"response": f'{final_prompt} {combined_summaries}'}), 200
-    except Exception as e:
-        print(f"Error reducing document: {e}")
-        return jsonify({"error": f"Error reading document: {e}"}), 500
-    
+        
 
 @bp.route("/documentsummary/reduce", methods=["POST"])
 async def documentsummary():
@@ -1207,7 +1190,17 @@ async def documentsummary():
     if len(filenames) == 0:
         return jsonify({"error": "Filenames not found"}), 400
     docString = await collect_documents(filenames, storage_container_name)
-    return await document_summary_reduce_internal(docString, prompt)
+    if not prompt == '':
+        prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
+    try:
+        chunks = chunkString(docString, 4000, 100)
+        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
+        combined_summaries = " ".join(chunk_summaries)
+        final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+        return jsonify({"response": f'{final_prompt} {combined_summaries}'}), 200
+    except Exception as e:
+        print(f"Error reducing document: {e}")
+        return jsonify({"error": f"Error reading document: {e}"}), 500
 
 
 
@@ -1219,12 +1212,6 @@ async def create_search_index():
     # """
     #     If the index already exists, then this function will update it and won't create a new one from scratch.
     #     If the updates are not compatible with the existing index, it will throw an error.
-
-    #     HTTP call body example:
-    #         {
-    #             "search_index_name": "test-ingrid",
-    #             "synonym_map_name": "test-synonyms"
-    #         }
     # """
 
     try:
@@ -1313,6 +1300,230 @@ async def create_search_index():
              {"error": f"Processing failed. Exception: {ex}"}, 500
         )
 
+@bp.websocket('/process_documents')
+async def process_documents():
+
+    # adds documents to the Azure Cognitive Search index
+    # and gives progress updates over a websocket
+    def convert_doc(documents, blob_name, url):
+        docs = []
+        full_text = []
+        doc_url_list = ['doc_url', 'user_id']
+        # for every page in the document
+        for document in documents:
+            
+            document.text = document.text.replace("\n",".  ").replace('..', '.')
+            document.text = re.sub(r"\s+", " ", document.text)
+            # extract and merge the text from individual pages
+            full_text.append(document.text)
+
+        # create a new Document with metadata fields and all text in one Document
+        docs.append(Document(
+
+            # make sure ID of the document is the pdf name without extension
+            id_ = re.sub(r'[^\w&=.-]', '_', blob_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
+
+            # join the text of the PDF into a single string
+            text = ' '.join(full_text),
+
+            # add metadata fields
+            metadata = {
+                #'title': blob_name.replace('.pdf','').replace('.PDF',''),
+                'user_id': container_name,
+                'doc_url': url,
+                'filename': blob_name,
+            },
+            # don't use the fields added as metadtata in the embedding/llm processes
+            excluded_embed_metadata_keys = doc_url_list,
+            excluded_llm_metadata_keys = doc_url_list
+        ))
+        return docs
+
+    try:
+        
+        abort_flag = False
+
+        async def listen_for_abort():
+            nonlocal abort_flag
+            while not abort_flag:
+                data = await websocket.receive()
+                data = json.loads(data)
+                if data.get('command') == 'abort':
+                    print("ABORT RCVD")
+                    abort_flag = True
+
+        asyncio.create_task(listen_for_abort())
+
+        while True:
+            data = await websocket.receive()
+            data = json.loads(data)
+            list_of_lists = data['documents']
+            container_name = data['container']
+            document_tuples = [tuple(item) for item in list_of_lists]
+            print(f"document tuples: {document_tuples}.")
+            print(f"list of lists: {list_of_lists}.")
+            try:
+                chunk_size = 1000
+                chunk_overlap = 100
+
+                # connect to an existing Azure Cognitive Search index
+                search_client = init_search_client()
+                container_client = init_container_client(container_name)
+                # define the llm model (using Azure OpenAI gpt-35-turbo model)
+                llm = AzureOpenAI(
+                    model=AZURE_OPENAI_MODEL_NAME,
+                    deployment_name=AZURE_OPENAI_MODEL,
+                    api_key=AZURE_OPENAI_KEY,
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    api_version=AZURE_OPENAI_PREVIEW_API_VERSION,
+                )
+                # define the embedding model (using Azure OpenAI text-embedding-ada-002 model)
+                embed_model = AzureOpenAIEmbedding(
+                    model=AZURE_OPENAI_EMBEDDING_MODEL_NAME,
+                    deployment_name=AZURE_OPENAI_EMBEDDING_NAME,
+                    api_key=AZURE_OPENAI_KEY,
+                    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+                    api_version=AZURE_OPENAI_PREVIEW_API_VERSION,
+                )
+                Settings.llm = llm
+                Settings.embed_model = embed_model
+
+                final_nodes = []
+
+                # process policy documents in each location
+                for doc in document_tuples:
+                    blob_name = doc[0]
+                    url = doc[1]
+                    print(f"Reading document: {blob_name}")
+                    if blob_name.endswith('.docx'):
+                        blob_client = container_client.get_blob_client(blob_name)
+                        print(f"Downloading document: {blob_name}")
+                        logging.info(f"Downloading document: {blob_name}")
+                        try:
+                            download_stream = blob_client.download_blob()
+                            with io.BytesIO() as output_stream:
+                                download_stream.readinto(output_stream)
+                                doc = docx.Document(output_stream)
+                                documents = []
+                                for para in doc.paragraphs:
+                                    documents.append(para)
+                        except Exception as e:
+                            print(f"Error downloading document: {e}")
+
+                    else:
+                        print(f'Processing {blob_name} with url {url}.')
+                        # create the loader
+
+                        loader = AzStorageBlobReader(
+                            account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
+                            container_name = container_name,
+                            blob = blob_name,
+                            credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
+                        )
+
+                        # load in document
+                        documents = loader.load_data()
+                    if abort_flag:
+                        return
+
+
+                    # convert documents to the correct format for us
+                    docs = convert_doc(documents, blob_name, url)
+                    if abort_flag:
+                        return
+
+                    # define a node parser (specify chunk size and overalap)
+                    node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+                    # split the documents into nodes (aka chunks)
+                    nodes = node_parser.get_nodes_from_documents(docs, show_progress=False)
+
+                    # change the node ID to document name + chunk/node number
+                    chunk_num = 1
+
+
+                    for node in nodes:
+                        node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
+                        chunk_num = chunk_num + 1
+
+                    # generate embeddings for each node
+                    progress = 2
+                    if len(nodes) > 50:
+                        interval = math.floor(len(nodes)/5)
+                    else: 
+                        interval = len(nodes)
+                        progress = 7
+                    for index, node in enumerate(nodes):
+                        if index % interval == 0:
+                            if abort_flag:
+                                return
+                            await websocket.send(f"{progress}")
+                            progress = progress + 1
+                        node_embedding = embed_model.get_text_embedding(
+                            node.get_content(metadata_mode="all")
+                        )
+                        node.embedding = node_embedding
+                    if abort_flag:
+                        return
+
+                    # add all the nodes to a final list that will be added to the search index
+                    final_nodes.append(nodes)
+
+                # flatten the list of nodes
+                flat_nodes_list = [item for node in final_nodes for item in node]
+
+                # define additional fields to be added to the search index 
+                # (needs to match the fields added in CreateSearchIndex)
+                metadata_fields = {
+                    'user_id': 'user_id',
+                    'doc_url': 'doc_url',
+                    'filename': 'filename'
+                }
+
+
+                # define the vector store we will be connecting to 
+                # (needs to match the fields added in CreateSearchIndex)
+                vector_store = AzureAISearchVectorStore(
+                    search_or_index_client=search_client,
+                    filterable_metadata_field_keys=metadata_fields,
+                    index_management=IndexManagement.VALIDATE_INDEX,
+                    id_field_key="id",
+                    chunk_field_key="content",
+                    embedding_field_key="content_vector",
+                    embedding_dimensionality=1536,
+                    metadata_string_field_key="llamaindex_metadata",
+                    doc_id_field_key="llamaindex_doc_id"
+                )
+
+                # set the storage context
+                storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+                
+                # load the index
+                index = VectorStoreIndex.from_documents(
+                    [],
+                    storage_context=storage_context,
+                )
+
+                if abort_flag:
+                    return
+
+                # add the nodes to the vector store/search index
+                index.insert_nodes(flat_nodes_list)
+
+                # get the ID-s of the documents added to the search index
+                node_ids = ', '.join([node.id_ for node in flat_nodes_list])
+
+                print(f"Documents added to the search index. Document IDs: {node_ids}")
+                if abort_flag:
+                    return
+                await websocket.send(f"done: Document IDs added to the search index: {node_ids}")
+            except Exception as e:
+                print(f"Error collecting documents: {e}")
+                return
+    finally:
+        await websocket.close()
+
 
 @bp.route("/upload_documents", methods=["POST"])
 async def upload_documents():
@@ -1320,7 +1531,6 @@ async def upload_documents():
     storage_container_name = authenticated_user['user_principal_id']
     uploadedFiles = []
     try:
-
         files = await request.files
         if 'file' not in files:
             print("No files part in the request")
@@ -1358,222 +1568,10 @@ async def upload_documents():
             blob_client.upload_blob(doc.stream, overwrite=True)
             uploadedFiles.append((file_name, blob_client.url))
             print(f"Successfully uploaded {file_name} at location {blob_client.url}.")
-        result = await addDocuments(uploadedFiles, storage_container_name)
-        print(f"Uploading Documents successful. Result: {result}")
-        return jsonify({"success": f"Uploading Documents successful. Result: {result}"}, 200)
+        return jsonify({"Documents": uploadedFiles}, 200)
     except Exception as ex:
         print(f"Uploading Documents failed. Exception: {ex}")
         return jsonify({"error": f"Uploading Documents failed. Exception: {ex}"}, 500)
-
-
-async def addDocuments(document_tuples, container_name: str):
-    print('Python HTTP trigger function processed a request for AddDocuments.')
-
-    def convert_doc(documents, blob_name, url):
-        docs = []
-        full_text = []
-        doc_url_list = ['doc_url', 'user_id']
-        # for every page in the document
-        for document in documents:
-            
-            document.text = document.text.replace("\n",".  ").replace('..', '.')
-            document.text = re.sub(r"\s+", " ", document.text)
-            # extract and merge the text from individual pages
-            full_text.append(document.text)
-
-        # create a new Document with metadata fields and all text in one Document
-        docs.append(Document(
-
-            # make sure ID of the document is the pdf name without extension
-            id_ = re.sub(r'[^\w&=.-]', '_', blob_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
-
-            # join the text of the PDF into a single string
-            text = ' '.join(full_text),
-
-            # add metadata fields
-            metadata = {
-                #'title': blob_name.replace('.pdf','').replace('.PDF',''),
-                'user_id': container_name,
-                'doc_url': url,
-                'filename': blob_name,
-            },
-            # don't use the fields added as metadtata in the embedding/llm processes
-            excluded_embed_metadata_keys = doc_url_list,
-            excluded_llm_metadata_keys = doc_url_list
-        ))
-        return docs
-    
-    try:
-        storage_account_name = AZURE_STORAGE_ACCOUNT
-        storage_account_key = AZURE_STORAGE_KEY
-        embedding_deployment_name = AZURE_OPENAI_EMBEDDING_NAME
-        embedding_model_name = AZURE_OPENAI_EMBEDDING_MODEL_NAME
-        llm_deployment_name = AZURE_OPENAI_MODEL
-        llm_model_name = AZURE_OPENAI_MODEL_NAME
-        api_key = AZURE_OPENAI_KEY
-        api_version = AZURE_OPENAI_PREVIEW_API_VERSION
-        azure_endpoint = AZURE_OPENAI_ENDPOINT
-        chunk_size = 1000
-        chunk_overlap = 100
-
-
-        # get Azure credentials
-
-        # connect to an existing Azure Cognitive Search index
-        search_client = init_search_client()
-
-
-        container_client = init_container_client(container_name)
-
-
-
-        # define the llm model (using Azure OpenAI gpt-35-turbo model)
-        llm = AzureOpenAI(
-            model=llm_model_name,
-            deployment_name=llm_deployment_name,
-            api_key=api_key,
-            azure_endpoint=azure_endpoint,
-            api_version=api_version,
-        )
-
-
-        # define the embedding model (using Azure OpenAI text-embedding-ada-002 model)
-        embed_model = AzureOpenAIEmbedding(
-            model=embedding_model_name,
-            deployment_name=embedding_deployment_name,
-            api_key=api_key,
-            azure_endpoint=azure_endpoint,
-            api_version=api_version,
-        )
-
-
-        Settings.llm = llm
-        Settings.embed_model = embed_model
-
-
-        final_nodes = []
-
-        # process policy documents in each location
-        for doc in document_tuples:
-            blob_name = doc[0]
-            url = doc[1]
-            
-            if blob_name.endswith('.docx'):
-                blob_client = container_client.get_blob_client(blob_name)
-                print(f"Downloading document: {blob_name}")
-                logging.info(f"Downloading document: {blob_name}")
-                try:
-                    download_stream = blob_client.download_blob()
-                    with io.BytesIO() as output_stream:
-                        download_stream.readinto(output_stream)
-                        doc = docx.Document(output_stream)
-                        documents = []
-                        for para in doc.paragraphs:
-                            documents.append(para)
-                except Exception as e:
-                    print(f"Error downloading document: {e}")
-
-            else:
-                print(f'Processing {blob_name} with url {url}.')
-                # create the loader
-
-                loader = AzStorageBlobReader(
-                    account_url = f'https://{storage_account_name}.blob.core.windows.net',
-                    container_name = container_name,
-                    blob = blob_name,
-                    credential = storage_account_key # replace this with DefaultAzureCredential() once MI is set up
-                )
-
-                # load in document
-                documents = loader.load_data()
-
-            # convert documents to the correct format for us
-            print(f"Converting {blob_name} to documents.")
-            logging.debug(f"Converting {blob_name} to documents.")
-            docs = convert_doc(documents, blob_name, url)
-
-            # define a node parser (specify chunk size and overalap)
-            node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-
-            # split the documents into nodes (aka chunks)
-            print('Splitting the documents into nodes.')
-            logging.debug(f"Splitting the documents into nodes.")
-            nodes = node_parser.get_nodes_from_documents(docs, show_progress=False)
-
-            # change the node ID to document name + chunk/node number
-            chunk_num = 1
-            print('Changing the node IDs.')
-            logging.debug(f"Changing the node IDs.")
-            for node in nodes:
-                node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
-                chunk_num = chunk_num + 1
-
-            # generate embeddings for each node
-            print('Generating embeddings for each node')
-            logging.debug(f"Generating embeddings for each node")
-            for node in nodes:
-                node_embedding = embed_model.get_text_embedding(
-                    node.get_content(metadata_mode="all")
-                )
-                node.embedding = node_embedding
-
-            # add all the nodes to a final list that will be added to the search index
-            print('Adding nodes to final list.')
-            logging.debug(f"Adding {len(nodes)} nodes to final list.")
-            final_nodes.append(nodes)
-
-        # flatten the list of nodes
-        print('Flattening the list of nodes.')
-        logging.debug(f"Flattening the list of nodes.")
-        flat_nodes_list = [item for node in final_nodes for item in node]
-
-        # define additional fields to be added to the search index 
-        # (needs to match the fields added in CreateSearchIndex)
-        metadata_fields = {
-            'user_id': 'user_id',
-            'doc_url': 'doc_url',
-            'filename': 'filename'
-        }
-
-
-        # define the vector store we will be connecting to 
-        # (needs to match the fields added in CreateSearchIndex)
-        vector_store = AzureAISearchVectorStore(
-            search_or_index_client=search_client,
-            filterable_metadata_field_keys=metadata_fields,
-            index_management=IndexManagement.VALIDATE_INDEX,
-            id_field_key="id",
-            chunk_field_key="content",
-            embedding_field_key="content_vector",
-            embedding_dimensionality=1536,
-            metadata_string_field_key="llamaindex_metadata",
-            doc_id_field_key="llamaindex_doc_id"
-        )
-
-        # set the storage context
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-        
-        # load the index
-        index = VectorStoreIndex.from_documents(
-            [],
-            storage_context=storage_context,
-        )
-
-
-        # add the nodes to the vector store/search index
-        print('Adding nodes to the search index.')
-        logging.debug(f"Adding {len(flat_nodes_list)} nodes to the search index.")
-        index.insert_nodes(flat_nodes_list)
-
-        # get the ID-s of the documents added to the search index
-        node_ids = ', '.join([node.id_ for node in flat_nodes_list])
-
-        print(f"Documents added to the search index. Document IDs: {node_ids}")
-        return f"Documents added to the search index. Document IDs: {node_ids}"
-    
-    except Exception as ex:
-        return f"Document addition failed. Exception: {ex}"
 
 
 @bp.route("/get_documents", methods=["GET"])
