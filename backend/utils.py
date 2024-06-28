@@ -123,15 +123,18 @@ def format_stream_response(chatCompletionChunk, history_metadata, message_uuid=N
         }],
         "history_metadata": history_metadata
     }
-
     if len(chatCompletionChunk.choices) > 0:
         delta = chatCompletionChunk.choices[0].delta
         if delta:
             if hasattr(delta, "context"):
-                messageObj = {
-                    "role": "tool",
-                    "content": json.dumps(delta.context)
-                }
+                if delta.context['citations'] == []:
+                    return 'retry'
+                    # raise Exception("An unexpected error occurred, please resubmit your question.")
+                else:
+                    messageObj = {
+                        "role": "tool",
+                        "content": json.dumps(delta.context)
+                    }
                 response_obj["choices"][0]["messages"].append(messageObj)
                 return response_obj
             if delta.role == "assistant" and hasattr(delta, "context"):
@@ -149,5 +152,4 @@ def format_stream_response(chatCompletionChunk, history_metadata, message_uuid=N
                     }
                     response_obj["choices"][0]["messages"].append(messageObj)
                     return response_obj
-    
     return {}

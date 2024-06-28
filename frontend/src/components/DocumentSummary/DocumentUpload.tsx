@@ -4,8 +4,10 @@ import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
 import { createSearchIndex, deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
-import { CommandBarButton } from '@fluentui/react'
+import { CommandBarButton, Dialog, DialogType } from '@fluentui/react'
 import styles from './DocumentUpload.module.css'
+import { set } from 'lodash'
+import { useBoolean } from '@fluentui/react-hooks'
 
 const baseStyle = {
     borderColor: 'black',
@@ -39,6 +41,7 @@ const baseStyle = {
     setUploadWS: React.Dispatch<React.SetStateAction<WebSocket | null>>
     setUploading: React.Dispatch<React.SetStateAction<string[]>>
     setProgress: React.Dispatch<React.SetStateAction<number>>
+    setDocData: React.Dispatch<React.SetStateAction<{[key: string]: string}>>
 }
 
 const DocumentUpload: React.FC<DocumentUploadProps> = ({
@@ -47,18 +50,37 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     setUploadWS,
     setProgress,
     setUploading,
+    setDocData,
 }) => {
     const [loading, setLoading] = useState(true)
     const [documents, setDocuments] = useState<string[]>([])
     const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+    const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true);
+    const [errorMsg, setErrorMsg] = useState<{title: string, subtitle: string}>()
 
+    const errorDialogContentProps = {
+        type: DialogType.close,
+        title: errorMsg?.title,
+        closeButtonAriaLabel: 'Close',
+        subText: errorMsg?.subtitle,
+        styles: { subText: { fontFamily:'DMSans-Regular' }, title: { fontFamily:'PlayfairDisplay-Regular' }, inner: { fontFamily:'DMSans-Regular' }, content: { fontFamily:'DMSans-Regular'}},
+
+    };
+
+    const modalProps = {
+        titleAriaId: 'labelId',
+        subtitleAriaId: 'subTextId',
+        isBlocking: true,
+        styles: { main: { maxWidth: 450, borderRadius:'20px' } },
+    }
 
     useEffect(() => {
         getDocuments().then((res) => {
             if (res) {
                 if (res.status === 200) {
                     res.json().then((data) => {
-                        setDocuments(data)
+                        setDocuments(Object.keys(data))
+                        setDocData(data)
                         setLoading(false)
                     })
                 }
@@ -93,7 +115,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 console.log('Error processing document:', event.data);
                 ws.close();
                 deleteDocuments(processing.map((doc) => doc[0]));
-                alert('There was an error processing the document. Please try again.');
+                setErrorMsg({title: 'Error processing document', subtitle: 'Please refresh the page and try again.'});
+                toggleErrorDialog();
             } else if (event.data.startsWith('done:')) {
                 ws.close();
                 const fileNames = processing.map((doc) => doc[0]);
@@ -128,14 +151,16 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         setSelectedFiles([]);
         const fileNames = acceptedFiles.map(file => file.name);
         if (documents.length + fileNames.length > 10) {
-            alert('You can only upload a maximum of 10 documents');
+            setErrorMsg({title: 'Too many files', subtitle: 'You can only upload a maximum of 10 documents'});
+            toggleErrorDialog();
             return;
         }
         try {
             const fileList = new DataTransfer();
             for (const file of acceptedFiles) {
                 if (documents.includes(file.name)) {
-                    alert(`You already have a document with the name '${file.name}'. Please rename the document and try again.`);
+                    setErrorMsg({title: 'Duplicate file', subtitle: `You already have a document with the name '${file.name}'. Please rename the document and try again.`});
+                    toggleErrorDialog();
                     continue;
                 }
                 fileList.items.add(file);
@@ -175,7 +200,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                     setSelectedFiles([])
                     setLoading(false)
                 } else {
-                    alert('Error deleting documents')
+                    setErrorMsg({title: 'Error deleting documents', subtitle: 'Please refresh the page and try again later.'});
+                    toggleErrorDialog();
                     setLoading(false)
                 }
             }})
@@ -194,6 +220,14 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             setSelectedFiles([])
         }, 1000)
     }
+
+    const handleErrorDialogClose = () => {
+        toggleErrorDialog()
+        setTimeout(() => {
+            setErrorMsg(undefined)
+        }, 500);
+    }
+
 
     const {    
         isFocused,
@@ -236,6 +270,14 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
     return (
         <div className={styles.container}>
+            <Dialog
+                hidden={hideErrorDialog}
+                onDismiss={handleErrorDialogClose}
+                dialogContentProps={errorDialogContentProps}
+                modalProps={modalProps}
+            >
+            </Dialog>
+
             { 
             loading ? 
             <div className={styles.loadingContainer}>

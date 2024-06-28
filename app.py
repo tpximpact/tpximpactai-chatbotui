@@ -5,6 +5,7 @@ import json
 import os
 import re
 import logging
+import time
 import uuid
 import docx
 import io
@@ -344,6 +345,36 @@ def init_cosmosdb_client():
         
     return cosmos_conversation_client
 
+def init_cosmosdb_logs_client():
+    logging.debug("Initializing CosmosDB logs client")
+    cosmos_logs_client = None
+    if CHAT_HISTORY_ENABLED:
+        logging.debug("COSMOSDB ENABLED")
+        try:
+            cosmos_endpoint = f'https://{AZURE_COSMOSDB_ACCOUNT}.documents.azure.com:443/'
+
+            if not AZURE_COSMOSDB_ACCOUNT_KEY:
+                credential = DefaultAzureCredential()
+            else:
+                credential = AZURE_COSMOSDB_ACCOUNT_KEY
+
+            cosmos_logs_client = CosmosConversationClient(
+                cosmosdb_endpoint=cosmos_endpoint, 
+                credential=credential, 
+                database_name=AZURE_COSMOSDB_DATABASE,
+                container_name="logs",
+                enable_message_feedback=AZURE_COSMOSDB_ENABLE_FEEDBACK
+            )
+        except Exception as e:
+            logging.exception("Exception in CosmosDB logs initialization", e)
+            cosmos_logs_client = None
+            raise e
+    else:
+        logging.debug("CosmosDB logs not configured")
+        
+    return cosmos_logs_client
+
+
 def init_container_client(storage_container_name):
 
     storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
@@ -573,21 +604,35 @@ def prepare_model_args(request_body):
     request_messages = request_body.get("messages", [])
     request_filenames = request_body.get("filenames", [])
     messages = []
-    if request_filenames == []:
-        messages = [
-            {
-                "role": "system",
-                "content": AZURE_OPENAI_SYSTEM_MESSAGE
-            }
-        ]
-
-    for message in request_messages:
-        if message:
-            messages.append({
+    totalTokens = 0
+    encoding = tiktoken.get_encoding("cl100k_base")
+    start = time.time()
+    for index, message in enumerate(reversed(request_messages)):
+    
+        if message and message["role"] != "tool":
+            totalTokens += len(encoding.encode(message["content"]))
+            if totalTokens>6000:
+                print('BREAKING BECAUSE TOO MANY MESSAGES')
+                break
+            messages.insert(0,{
                 "role": message["role"] ,
                 "content": message["content"]
             })
-
+            
+    # if request_filenames == []:
+    #     messages.insert(0,
+    #             {
+    #                 "role": "system",
+    #                 "content": AZURE_OPENAI_SYSTEM_MESSAGE
+    #             }
+    #     )
+    
+    totalTokens += len(encoding.encode(AZURE_OPENAI_SYSTEM_MESSAGE))
+    print('system message length:', len(encoding.encode(AZURE_OPENAI_SYSTEM_MESSAGE)))
+    print('totalTokens', totalTokens)
+    print('number of messages', len(messages))
+    end = time.time()
+    print('Token estimation time', end-start)
     model_args = {
         "messages": messages,
         "temperature": float(AZURE_OPENAI_TEMPERATURE),
@@ -620,18 +665,17 @@ def prepare_model_args(request_body):
                     model_args_clean["extra_body"]["data_sources"][0]["parameters"]["embedding_dependency"]["authentication"][field] = "*****"
         
     logging.debug(f"REQUEST BODY: {json.dumps(model_args_clean, indent=4)}")
-    
+    print('MODEL ARGS', model_args)
     return model_args
 
 async def send_chat_request(request):
     model_args = prepare_model_args(request)
-
     try:
         azure_openai_client = init_openai_client()
         response = await azure_openai_client.chat.completions.create(**model_args)
 
-
     except Exception as e:
+        print(f"Exception in send_chat_request {e}")
         logging.exception("Exception in send_chat_request")
         raise e
 
@@ -645,11 +689,13 @@ async def complete_chat_request(request_body):
 
 async def stream_chat_request(request_body):
     response = await send_chat_request(request_body)
+    
     history_metadata = request_body.get("history_metadata", {})
-
     async def generate():
         async for completionChunk in response:
-            yield format_stream_response(completionChunk, history_metadata)
+            formattedChunk = format_stream_response(completionChunk, history_metadata)
+            # TO DO - RETRY INSTEAD OF PASSING ERROR
+            yield formattedChunk
 
     return generate()
 
@@ -666,6 +712,7 @@ async def conversation_internal(request_body):
             return jsonify(result)
     
     except Exception as ex:
+        print(f"Exception in conversation_internal {ex}")
         logging.exception(ex)
         if hasattr(ex, "status_code"):
             return jsonify({"error": str(ex)}), ex.status_code
@@ -682,7 +729,6 @@ async def conversation():
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
-
     return await conversation_internal(request_json)
 
 @bp.route("/frontend_settings", methods=["GET"])  
@@ -708,6 +754,10 @@ async def add_conversation():
         cosmos_conversation_client = init_cosmosdb_client()
         if not cosmos_conversation_client:
             raise Exception("CosmosDB is not configured or not working")
+        
+        cosmos_logs_client = init_cosmosdb_logs_client()
+        if not cosmos_logs_client:
+            raise Exception("CosmosDB logs is not configured or not working")
 
         # check for the conversation_id, if the conversation is not set, we will create a new one
         history_metadata = {}
@@ -715,15 +765,19 @@ async def add_conversation():
             title = await generate_title(request_json["messages"])
             conversation_dict = await cosmos_conversation_client.create_conversation(user_id=user_id, title=title)
             conversation_id = conversation_dict['id']
+            logs_dict = await cosmos_logs_client.create_log_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
             history_metadata['title'] = title
             history_metadata['date'] = conversation_dict['createdAt']
-            
+
+
+
         ## Format the incoming message object in the "chat/completions" messages format
-        ## then write it to the conversation history in cosmos
+        ## then write it to the conversation history in cosmos and logs
+        messageUuid = str(uuid.uuid4())
         messages = request_json["messages"]
         if len(messages) > 0 and messages[-1]['role'] == "user":
             createdMessageValue = await cosmos_conversation_client.create_message(
-                uuid=str(uuid.uuid4()),
+                uuid=messageUuid,
                 conversation_id=conversation_id,
                 user_id=user_id,
                 input_message=messages[-1],
@@ -731,18 +785,31 @@ async def add_conversation():
             )
             if createdMessageValue == "Conversation not found":
                 raise Exception("Conversation not found for the given conversation ID: " + conversation_id + ".")
+            
+            createdLogMessageValue = await cosmos_logs_client.create_message(
+                uuid=messageUuid,
+                conversation_id=conversation_id,
+                user_id=user_id,
+                input_message=messages[-1],
+                hidden=messages[-1]['hidden']
+            )
+            if createdLogMessageValue == "Conversation not found":
+                raise Exception("Conversation log not found for the given conversation ID: " + conversation_id + ".")
+
         else:
             raise Exception("No user message found")
-        
         await cosmos_conversation_client.cosmosdb_client.close()
+        await cosmos_logs_client.cosmosdb_client.close()
         
         # Submit request to Chat Completions for response
         request_body = await request.get_json()
         history_metadata['conversation_id'] = conversation_id
         request_body['history_metadata'] = history_metadata
+
         return await conversation_internal(request_body)
        
     except Exception as e:
+        print(f"Exception in /history/generate: {e}")
         logging.exception("Exception in /history/generate")
         return jsonify({"error": str(e)}), 500
 
@@ -761,19 +828,30 @@ async def update_conversation():
         cosmos_conversation_client = init_cosmosdb_client()
         if not cosmos_conversation_client:
             raise Exception("CosmosDB is not configured or not working")
+        
+        cosmos_log_client = init_cosmosdb_logs_client()
+        if not cosmos_log_client:
+            raise Exception("CosmosDB logs is not configured or not working")
 
         # check for the conversation_id, if the conversation is not set, we will create a new one
         if not conversation_id:
             raise Exception("No conversation_id found")
-            
+
         ## Format the incoming message object in the "chat/completions" messages format
         ## then write it to the conversation history in cosmos
         messages = request_json["messages"]
         if len(messages) > 0 and messages[-1]['role'] == "assistant":
             if len(messages) > 1 and messages[-2].get('role', None) == "tool":
                 # write the tool message first
+                toolMessageUuid = str(uuid.uuid4())
                 await cosmos_conversation_client.create_message(
-                    uuid=str(uuid.uuid4()),
+                    uuid=toolMessageUuid,
+                    conversation_id=conversation_id,
+                    user_id=user_id,
+                    input_message=messages[-2]
+                )
+                await cosmos_log_client.create_message(
+                    uuid=toolMessageUuid,
                     conversation_id=conversation_id,
                     user_id=user_id,
                     input_message=messages[-2]
@@ -785,15 +863,25 @@ async def update_conversation():
                 user_id=user_id,
                 input_message=messages[-1]
             )
+            await cosmos_log_client.create_message(
+                uuid=messages[-1]['id'],
+                conversation_id=conversation_id,
+                user_id=user_id,
+                input_message=messages[-1]
+            )
+
         else:
+            print(f"no assistant message found ")
             raise Exception("No bot messages found")
         
         # Submit request to Chat Completions for response
         await cosmos_conversation_client.cosmosdb_client.close()
+        await cosmos_log_client.cosmosdb_client.close()
         response = {'success': True}
         return jsonify(response), 200
        
     except Exception as e:
+        print(f"Exception in /history/update: {e}")
         logging.exception("Exception in /history/update")
         return jsonify({"error": str(e)}), 500
 
@@ -1068,9 +1156,6 @@ def chunkString(text, chunk_size,overlap):
     SENTENCE_ENDINGS = [".", "!", "?"]
     WORDS_BREAKS = list(reversed([",", ";", ":", " ", "(", ")", "[", "]", "{", "}", "\t", "\n"]))
 
-    encoding = tiktoken.get_encoding("cl100k_base")
-    tokens = encoding.encode(text)
-
 
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         separators=SENTENCE_ENDINGS + WORDS_BREAKS,
@@ -1181,6 +1266,7 @@ async def refineProgress():
 
 @bp.route("/documentsummary/reduce", methods=["POST"])
 async def documentsummary():
+    encoding = tiktoken.get_encoding("cl100k_base")
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     storage_container_name = authenticated_user['user_principal_id']
     data = await request.json
@@ -1190,13 +1276,18 @@ async def documentsummary():
     if len(filenames) == 0:
         return jsonify({"error": "Filenames not found"}), 400
     docString = await collect_documents(filenames, storage_container_name)
+    num_tokens = len(encoding.encode(docString))
     if not prompt == '':
         prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
     try:
-        chunks = chunkString(docString, 4000, 100)
-        chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
-        combined_summaries = " ".join(chunk_summaries)
-        final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+        if num_tokens > 4000:
+            chunks = chunkString(docString, 4000, 100)
+            chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
+            combined_summaries = " ".join(chunk_summaries)
+            final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+        else:
+            final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+            combined_summaries = docString
         return jsonify({"response": f'{final_prompt} {combined_summaries}'}), 200
     except Exception as e:
         print(f"Error reducing document: {e}")
@@ -1302,16 +1393,21 @@ async def create_search_index():
 
 @bp.websocket('/process_documents')
 async def process_documents():
-
+    encoding = tiktoken.get_encoding("cl100k_base")
     # adds documents to the Azure Cognitive Search index
     # and gives progress updates over a websocket
     def convert_doc(documents, blob_name, url):
+        print('Converting documents, there are ', len(documents), ' documents in this collection.')
         docs = []
         full_text = []
+        num_tokens = 0
         doc_url_list = ['doc_url', 'user_id']
+        
         # for every page in the document
         for document in documents:
-            
+            # count the number of tokens in the document as this is the only time we're looking at the raw document text all in one place
+            num_tokens += len(encoding.encode(document.text))
+
             document.text = document.text.replace("\n",".  ").replace('..', '.')
             document.text = re.sub(r"\s+", " ", document.text)
             # extract and merge the text from individual pages
@@ -1337,7 +1433,8 @@ async def process_documents():
             excluded_embed_metadata_keys = doc_url_list,
             excluded_llm_metadata_keys = doc_url_list
         ))
-        return docs
+        
+        return docs, num_tokens
 
     try:
         
@@ -1394,11 +1491,13 @@ async def process_documents():
                 for doc in document_tuples:
                     blob_name = doc[0]
                     url = doc[1]
+                    num_tokens = 0
+                    blob_client = container_client.get_blob_client(blob_name)
                     print(f"Reading document: {blob_name}")
                     if blob_name.endswith('.docx'):
-                        blob_client = container_client.get_blob_client(blob_name)
                         print(f"Downloading document: {blob_name}")
                         logging.info(f"Downloading document: {blob_name}")
+                        
                         try:
                             download_stream = blob_client.download_blob()
                             with io.BytesIO() as output_stream:
@@ -1407,6 +1506,7 @@ async def process_documents():
                                 documents = []
                                 await websocket.send('2')
                                 for para in doc.paragraphs:
+                                    num_tokens += len(encoding.encode(para.text))
                                     documents.append(para)
                         except Exception as e:
                             print(f"Error downloading document: {e}")
@@ -1426,19 +1526,27 @@ async def process_documents():
                         await websocket.send('2')
                         try:
                             documents = loader.load_data()
+                            for document in documents:
+                                num_tokens += len(encoding.encode(document.text))
                         except Exception as e:
                             print(f"Error loading document: {e}")
                             await websocket.send(f"error")
                             return
+                    
+                    blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
+
                     await websocket.send('3')
                     if abort_flag:
                         return
 
 
                     # convert documents to the correct format for us
-                    docs = convert_doc(documents, blob_name, url)
+                    docs, num_tokens = convert_doc(documents, blob_name, url)
                     if abort_flag:
                         return
+                    
+                    # set the number of tokens as metadata for the blob
+                    blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
 
                     # define a node parser (specify chunk size and overalap)
                     node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -1586,12 +1694,20 @@ async def upload_documents():
 
 @bp.route("/get_documents", methods=["GET"])
 async def get_documents():
+    print('GET DOCS CALLED')
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     container_client = init_container_client(authenticated_user['user_principal_id'])
     try:
         blob_list = container_client.list_blob_names()
-        blob_names = [blob for blob in blob_list]
-        return jsonify(blob_names), 200
+        # blob_names = [blob for blob in blob_list]
+        # return jsonify(blob_names), 200
+        blob_data = {} 
+        for blob in blob_list:
+            blob_client = container_client.get_blob_client(blob)
+            blob_data[blob] = blob_client.get_blob_properties().metadata['num_tokens']
+            print('Blob name: ' + blob + ' Number of tokens: ' + blob_data[blob])
+        print(f"Successfully retrieved documents: {blob_data}")
+        return jsonify(blob_data), 200
     except Exception as ex:
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
 

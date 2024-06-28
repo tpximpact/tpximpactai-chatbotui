@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
-import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal } from "@fluentui/react";
+import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal, buttonProperties } from "@fluentui/react";
 import { SquareRegular, ShieldLockRegular, ErrorCircleRegular, Dismiss12Regular, Dismiss16Regular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
@@ -75,13 +75,15 @@ const Chat = () => {
         title: errorMsg?.title,
         closeButtonAriaLabel: 'Close',
         subText: errorMsg?.subtitle,
+        styles: { subText: { fontFamily:'DMSans-Regular' }, title: { fontFamily:'PlayfairDisplay-Regular' }, inner: { fontFamily:'DMSans-Regular' }, content: { fontFamily:'DMSans-Regular'}},
+
     };
 
     const modalProps = {
         titleAriaId: 'labelId',
         subtitleAriaId: 'subTextId',
         isBlocking: true,
-        styles: { main: { maxWidth: 450 } },
+        styles: { main: { maxWidth: 450, borderRadius:'20px' } },
     }
 
     const [ASSISTANT, TOOL, ERROR] = ["assistant", "tool", "error"]
@@ -140,7 +142,6 @@ const Chat = () => {
             assistantContent += resultMessage.content
             assistantMessage = resultMessage
             assistantMessage.content = assistantContent
-
             if (resultMessage.context) {
                 toolMessage = {
                     id: uuid(),
@@ -152,7 +153,6 @@ const Chat = () => {
         }
 
         if (resultMessage.role === TOOL) toolMessage = resultMessage
-
         if (!conversationId) {
             isEmpty(toolMessage) ?
                 setMessages([...messages, userMessage, assistantMessage]) :
@@ -162,6 +162,7 @@ const Chat = () => {
                 setMessages([...messages, assistantMessage]) :
                 setMessages([...messages, toolMessage, assistantMessage]);
         }
+
     }
 
     const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string, hidden?: boolean) => {
@@ -316,13 +317,13 @@ const Chat = () => {
                 conversation.messages.push(userMessage);
                 request = {
                     messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)],
-                    filenames: filenames ? filenames : []
+                    filenames: filenames && !hidden ? filenames : []
                 };
             }
         } else {
             request = {
                 messages: [userMessage].filter((answer) => answer.role !== ERROR),
-                filenames: filenames ? filenames : []
+                filenames: filenames && !hidden ? filenames : []
             };
             setMessages(request.messages)
         }
@@ -332,6 +333,27 @@ const Chat = () => {
             if (!response?.ok) {
                 const responseJson = await response.json();
                 var errorResponseMessage = responseJson.error === undefined ? "Please try again. If the problem persists, please contact the site administrator." : responseJson.error;
+                const errorMessageContent = responseJson
+                const jsonStartIndex = errorResponseMessage.indexOf("{");
+
+                // Extract the JSON string
+                const jsonString = errorResponseMessage.substring(jsonStartIndex);
+                console.log('json string:', jsonString)
+                const validJsonString = jsonString.replace(/(\w+)'(\s*:\s*)'([^']+)'/g, '"$1"$2"$3"')
+                .replace(/'(\w+)':/g, '"$1":');                
+                console.log('json valid string', validJsonString)
+                // Parse the JSON string
+                try{
+
+                    const jsonError = JSON.parse(validJsonString);
+                    console.log(jsonError)
+                    console.log(jsonError.code)
+    
+                }
+                catch( e) {
+                    console.log(e)
+                }
+                
                 let errorChatMsg: ChatMessage = {
                     id: uuid(),
                     role: ERROR,
@@ -936,6 +958,7 @@ const Chat = () => {
                                 >
                                 </Dialog>
                                 <DocumentSummaryModal
+                disabled={isLoading}
                 isOpen={isDocSumModalOpen}
                 onClose={closeDocSumModal}
                 onSend={(question, id) => {
@@ -1002,7 +1025,7 @@ const Chat = () => {
                         <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
                             <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
                                 <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
-                                <IconButton iconProps={{ iconName: 'Cancel' }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
+                                <IconButton iconProps={{ iconName: 'Cancel', styles: {root: {color:'black'}} }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
                             </Stack>
                             <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
                             <div tabIndex={0}>

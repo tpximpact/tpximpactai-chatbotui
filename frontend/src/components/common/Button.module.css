@@ -22,7 +22,13 @@
     background-color: #ffcfca;
   }
 
+  .disabled {
+    border-color: #a9a9a9;
+    cursor: not-allowed;
+    pointer-events: none; 
+  }
   
+    
   .shareButtonRoot span {
     line-height: 20px;
     color: hsl(0, 0%, 0%);
@@ -30,6 +36,10 @@
     text-transform: uppercase;
     font-size: 1.1rem;
     line-height: 1.5rem;
+  }
+
+  .disabled span {
+    color: #a9a9a9;
   }
 
   .shareButtonRoot i, .shareButtonRoot:hover i {

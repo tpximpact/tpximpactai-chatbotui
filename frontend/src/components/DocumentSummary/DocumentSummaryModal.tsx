@@ -6,8 +6,10 @@ import { ShareButton } from '../common/Button';
 import { deleteDocuments, documentSummaryReduceApi, getUserIdentity } from '../../api';
 import LoadingBar from '../LoadingBar';
 import Loading from '../Loading';
+import { set } from 'lodash';
 
 interface CustomModalProps {
+    disabled:boolean
   isOpen: boolean;
   onClose: () => void;
   setFilenames: (filenames: string[]) => void;
@@ -16,16 +18,18 @@ interface CustomModalProps {
   conversationId?: string;
 }
 
-const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onSend, conversationId, setFilenames, filenames }) => {
+const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onSend, conversationId, setFilenames, filenames, disabled }) => {
     const [uploadWS, setUploadWS] = React.useState<WebSocket | null>(null);
     const [uploading, setUploading] = React.useState<string[]>([]);
     const [summarising, setSummarising] = React.useState<string[]>([]);
+    const [short, setShort] = React.useState<boolean>(false);
     const [method, setMethod] = React.useState<string>('');
     const [prompt, setPrompt] = React.useState<string>('');
     const [progress, setProgress] = React.useState<number>(0);
     const [refining, setRefining] = React.useState<boolean>(false);
     const [reducing, setReducing] = React.useState<boolean>(false);
     const [refineWS, setRefineWS] = React.useState<WebSocket | null>(null);
+    const [docData, setDocData] = React.useState<{[key: string]: string}>({});
 
     const reset = () => {
         setTimeout(() => {
@@ -94,6 +98,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
 
 
     const onSubmit = () => {
+        setFilenames([])
         if (method === 'refine') {
             setRefining(true);
             return
@@ -119,7 +124,9 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
             onSend(summary);
         }
         onClose();
-        setFilenames(summarising);
+        setTimeout(() => {
+        setFilenames(summarising)
+        }, 2000);
     }
 
     const handleAskQuestions = (filenames: string[]) => {
@@ -128,7 +135,19 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
     }
 
     const handleSummarise = (filenames: string[]) => {
-        setSummarising(filenames);
+        let totalTokens = 0;
+        for (const filename of filenames) {
+            console.log(docData[filename])
+            totalTokens =+ parseInt(docData[filename]); 
+        }
+        if (totalTokens > 4000) {
+            setSummarising(filenames);
+        }else{
+            console.log('short')
+            setShort(true);
+            setSummarising(filenames);
+        }
+        
     }
 
     const handleClose = () => {
@@ -184,7 +203,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     </>
                 :            
                 summarising.length > 0 ? 
-                method ? 
+                method || short ? 
                 refining ?
                 <>
                     <div className={styles.modalHeader}>
@@ -240,11 +259,17 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                             onMouseOver={undefined}
                             iconProps={{ iconName: 'Back', styles: { root: { color: 'black' } } }}
                             ariaLabel="Close"
-                            onClick={() => setMethod('')}
+                            onClick={() => {
+                                if (short) {
+                                    setSummarising([]);
+                                    setShort(false);
+                                } else {
+                                    setMethod('');
+                                }}}
                             styles={{ root: { borderRadius: '10px', margin: '10px 10px 10px 0px' } }}
                             className={styles.closeButton} // Apply custom CSS class for close button
                             />
-                        <ShareButton onClick={onSubmit} text={'Summarise'} style={{marginLeft:'auto'}}/>
+                        <ShareButton onClick={onSubmit} text={'Summarise'} style={{marginLeft:'auto'}} disabled={disabled}/>
 
                     </div>
                 </>
@@ -303,6 +328,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     setUploadWS={setUploadWS}
                     setUploading={setUploading}
                     setProgress={setProgress}
+                    setDocData={setDocData}
                     />
                 </>
                 }

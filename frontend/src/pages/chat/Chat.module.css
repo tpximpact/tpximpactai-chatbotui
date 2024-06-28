@@ -364,6 +364,7 @@
     max-width: 30%;
     overflow-y: scroll;
     max-height: calc(100vh - 100px);
+    border-radius: 20px;
 }
 
 .citationPanelHeaderContainer {
@@ -379,12 +380,14 @@
     flex: none;
     order: 0;
     flex-grow: 0;
+    font-family: 'PlayfairDisplay-Regular';
 }
 
 .citationPanelDismiss {
     width: 18px;
     height: 18px;
     color: #424242;
+    border-radius: 12px;
 }
 
 .citationPanelDismiss:hover {

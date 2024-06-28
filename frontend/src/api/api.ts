@@ -16,6 +16,24 @@ export async function conversationApi(options: ConversationRequest, abortSignal:
     return response;
 }
 
+export async function documentSummaryApi(filenames: string[], prompt: string): Promise<Response> {
+    try {
+        const response = await fetch("/documentsummary", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ filenames, prompt }), // Serialize the object to JSON
+        });
+        return response;
+    } catch (error) {
+        // Handle fetch errors
+        console.error("Error fetching data:", error);
+        throw error; // Re-throw the error to be caught by the caller
+    }
+}
+
+
 export async function documentSummaryReduceApi(filenames: string[], prompt: string): Promise<Response> {
     try {
         const response = await fetch("/documentsummary/reduce", {
@@ -128,6 +146,7 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
 
 export const historyGenerate = async (options: ConversationRequest, abortSignal: AbortSignal, convId?: string): Promise<Response> => {
     let body;
+    console.log('OPTIONS:', JSON.stringify(options.messages))
     if(convId){
         body = JSON.stringify({
             conversation_id: convId,
@@ -158,6 +177,7 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
 }
 
 export const historyUpdate = async (messages: ChatMessage[], convId: string): Promise<Response> => {
+    console.log("messages: ", messages)
     const response = await fetch("/history/update", {
         method: "POST",
         body: JSON.stringify({

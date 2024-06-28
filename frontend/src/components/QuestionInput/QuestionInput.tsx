@@ -24,6 +24,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         }
 
         if(conversationId){
+            console.log("question: ", question, "conversationId: ", conversationId)
             onSend(question, conversationId);
         }else{
             onSend(question);

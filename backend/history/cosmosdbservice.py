@@ -27,8 +27,8 @@ class CosmosConversationClient():
         try:
             self.container_client = self.database_client.get_container_client(container_name)
         except exceptions.CosmosResourceNotFoundError:
-            raise ValueError("Invalid CosmosDB container name") 
-        
+            raise ValueError("Invalid CosmosDB container name")
+                
 
     async def ensure(self):
         if not self.cosmosdb_client or not self.database_client or not self.container_client:
@@ -49,6 +49,22 @@ class CosmosConversationClient():
     async def create_conversation(self, user_id, title = ''):
         conversation = {
             'id': str(uuid.uuid4()),  
+            'type': 'conversation',
+            'createdAt': datetime.utcnow().isoformat(),  
+            'updatedAt': datetime.utcnow().isoformat(),  
+            'userId': user_id,
+            'title': title
+        }
+        ## TODO: add some error handling based on the output of the upsert_item call
+        resp = await self.container_client.upsert_item(conversation)  
+        if resp:
+            return resp
+        else:
+            return False
+        
+    async def create_log_conversation(self, user_id, conversation_id, title = ''):
+        conversation = {
+            'id': conversation_id,  
             'type': 'conversation',
             'createdAt': datetime.utcnow().isoformat(),  
             'updatedAt': datetime.utcnow().isoformat(),  

@@ -9,6 +9,7 @@ interface ButtonProps extends IButtonProps {
   onClick: () => void;
   text: string | undefined;
   color?: Color;
+  disabled?: boolean;
 }
 
 function getRandomColor(): string {
@@ -18,7 +19,7 @@ function getRandomColor(): string {
 }
 
 
-export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple' }) => {
+export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple', disabled }) => {
   const colorStyles: Record<Color, string> = {
     purple: styles.purple,
     blue: styles.blue,
@@ -26,11 +27,12 @@ export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purp
     green: styles.green,
     random: getRandomColor(),
   };
+  const disabledStyle = disabled ? styles.disabled : '';
   const buttonStyle = colorStyles[color];
   return (
     <CommandBarButton
-      className={[styles.shareButtonRoot, buttonStyle].join(' ')}
-      onClick={onClick}
+      className={[styles.shareButtonRoot, buttonStyle, disabledStyle].join(' ')}
+      onClick={disabled ? undefined : onClick}
       text={text}
     />
   )
