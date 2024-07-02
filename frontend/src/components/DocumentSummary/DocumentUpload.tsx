@@ -75,6 +75,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     }
 
     useEffect(() => {
+        createSearchIndex()
         getDocuments().then((res) => {
             if (res) {
                 if (res.status === 200) {

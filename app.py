@@ -594,6 +594,12 @@ def get_configured_data_source(user_id, filenames):
     return data_source
 
 def prepare_model_args(request_body):
+
+    def cleanMessage(message):
+        #remove citation tags
+        cleaned_message = re.sub(r'\[doc[1-5]\]', '', message)
+        return cleaned_message
+    
     logging.debug("PREPARING MODEL ARGS")
     try:
         authenticated_user = get_authenticated_user_details(request_headers=request.headers)
@@ -606,33 +612,18 @@ def prepare_model_args(request_body):
     messages = []
     totalTokens = 0
     encoding = tiktoken.get_encoding("cl100k_base")
-    start = time.time()
+
     for index, message in enumerate(reversed(request_messages)):
-    
         if message and message["role"] != "tool":
             totalTokens += len(encoding.encode(message["content"]))
             if totalTokens>6000:
-                print('BREAKING BECAUSE TOO MANY MESSAGES')
+                print('Message list too long, truncating to 6000 tokens which is ', index, ' messages.')
                 break
             messages.insert(0,{
                 "role": message["role"] ,
-                "content": message["content"]
+                "content": cleanMessage(message["content"])
             })
-            
-    # if request_filenames == []:
-    #     messages.insert(0,
-    #             {
-    #                 "role": "system",
-    #                 "content": AZURE_OPENAI_SYSTEM_MESSAGE
-    #             }
-    #     )
-    
-    totalTokens += len(encoding.encode(AZURE_OPENAI_SYSTEM_MESSAGE))
-    print('system message length:', len(encoding.encode(AZURE_OPENAI_SYSTEM_MESSAGE)))
-    print('totalTokens', totalTokens)
-    print('number of messages', len(messages))
-    end = time.time()
-    print('Token estimation time', end-start)
+
     model_args = {
         "messages": messages,
         "temperature": float(AZURE_OPENAI_TEMPERATURE),
@@ -642,6 +633,15 @@ def prepare_model_args(request_body):
         "stream": SHOULD_STREAM,
         "model": AZURE_OPENAI_MODEL,
     }
+
+    # if len(request_filenames) == 0:
+    #     messages.insert(0,
+    #             {
+    #                 "role": "system",
+    #                 "content": AZURE_OPENAI_SYSTEM_MESSAGE
+    #             }
+    #     )
+
 
     if len(request_filenames) > 0:
         model_args["extra_body"] = {
