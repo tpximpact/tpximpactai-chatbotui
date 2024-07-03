@@ -391,7 +391,7 @@ def init_search_client():
     search_client = None
     try:
         search_client = SearchClient(
-            endpoint=f"https://{AZURE_SEARCH_SERVICE}.search.windows.net/",
+            endpoint=f"https://{AZURE_SEARCH_SERVICE}.privatelink.search.windows.net/",
             index_name=AZURE_SEARCH_INDEX,
             credential=AzureKeyCredential(AZURE_SEARCH_KEY)
         )
@@ -623,7 +623,7 @@ def prepare_model_args(request_body):
                 "role": message["role"] ,
                 "content": cleanMessage(message["content"])
             })
-
+                
     model_args = {
         "messages": messages,
         "temperature": float(AZURE_OPENAI_TEMPERATURE),
@@ -1694,7 +1694,6 @@ async def upload_documents():
 
 @bp.route("/get_documents", methods=["GET"])
 async def get_documents():
-    print('GET DOCS CALLED')
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     container_client = init_container_client(authenticated_user['user_principal_id'])
     try:
