@@ -351,7 +351,7 @@ def init_cosmosdb_logs_client():
     if CHAT_HISTORY_ENABLED:
         logging.debug("COSMOSDB ENABLED")
         try:
-            cosmos_endpoint = f'https://{AZURE_COSMOSDB_ACCOUNT}.privatelink.documents.azure.com:443/'
+            cosmos_endpoint = f'https://{AZURE_COSMOSDB_ACCOUNT}.documents.azure.com:443/'
 
             if not AZURE_COSMOSDB_ACCOUNT_KEY:
                 credential = DefaultAzureCredential()
@@ -391,7 +391,7 @@ def init_search_client():
     search_client = None
     try:
         search_client = SearchClient(
-            endpoint=f"https://{AZURE_SEARCH_SERVICE}.privatelink.search.windows.net/",
+            endpoint=f"https://{AZURE_SEARCH_SERVICE}.search.windows.net/",
             index_name=AZURE_SEARCH_INDEX,
             credential=AzureKeyCredential(AZURE_SEARCH_KEY)
         )
@@ -440,7 +440,7 @@ def get_configured_data_source(user_id, filenames):
         data_source = {
                 "type": "azure_search",
                 "parameters": {
-                    "endpoint": f"https://{AZURE_SEARCH_SERVICE}.privatelink.search.windows.net",
+                    "endpoint": f"https://{AZURE_SEARCH_SERVICE}.search.windows.net",
                     "authentication": authentication,
                     "index_name": AZURE_SEARCH_INDEX,
                     "fields_mapping": {
@@ -1315,7 +1315,7 @@ async def create_search_index():
         # credential_MI = DefaultAzureCredential() # use this when MI is set up for Azure AI Search
         credential = AzureKeyCredential(search_service_key) # use this for free tier Azure AI Search (MI not supported)
         # connect to Azure Cognitive Search resource
-        service_endpoint = f"https://{search_service_name}.privatelink.search.windows.net"
+        service_endpoint = f"https://{search_service_name}.search.windows.net"
         index_client = SearchIndexClient(service_endpoint, credential)
 
         # define the fields we want the index to contain
@@ -1386,6 +1386,7 @@ async def create_search_index():
         )
     
     except Exception as ex:
+        logging.exception(f"Processing failed., Exception: {ex}")
         print(f"Processing failed. Exception: {ex}")
         return jsonify(
              {"error": f"Processing failed. Exception: {ex}"}, 500
