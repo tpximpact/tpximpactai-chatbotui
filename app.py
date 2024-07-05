@@ -425,17 +425,17 @@ def get_configured_data_source(user_id, filenames):
             logging.debug(f"FILTER: {filter}")
         # Set authentication
         authentication = {}
-        if AZURE_SEARCH_KEY:
-            authentication = {
-                "type": "api_key",
-                "api_key": AZURE_SEARCH_KEY
-            }
-        else:
-            # If key is not provided, assume AOAI resource identity has been granted access to the search service
-            logging.debug("Using system-assigned managed identity for Azure Cognitive Search")
-            authentication = {
-                "type": "system_assigned_managed_identity"
-            }
+        # if AZURE_SEARCH_KEY:
+        #     authentication = {
+        #         "type": "api_key",
+        #         "api_key": AZURE_SEARCH_KEY
+        #     }
+        # else:
+        # If key is not provided, assume AOAI resource identity has been granted access to the search service
+        logging.debug("Using system-assigned managed identity for Azure Cognitive Search")
+        authentication = {
+            "type": "system_assigned_managed_identity"
+        }
 
         data_source = {
                 "type": "azure_search",
@@ -634,16 +634,16 @@ def prepare_model_args(request_body):
         "model": AZURE_OPENAI_MODEL,
     }
 
-    # if len(request_filenames) == 0:
-    #     messages.insert(0,
-    #             {
-    #                 "role": "system",
-    #                 "content": AZURE_OPENAI_SYSTEM_MESSAGE
-    #             }
-    #     )
-
-
-    if len(request_filenames) > 0:
+    if len(request_filenames) == 0:
+        print('no files')
+        messages.insert(0,
+                {
+                    "role": "system",
+                    "content": AZURE_OPENAI_SYSTEM_MESSAGE
+                }
+        )
+    elif len(request_filenames) > 0:
+        print('Request filenames: ', request_filenames)
         model_args["extra_body"] = {
             "data_sources": [get_configured_data_source(user_id, request_filenames)]
         }
@@ -665,7 +665,6 @@ def prepare_model_args(request_body):
                     model_args_clean["extra_body"]["data_sources"][0]["parameters"]["embedding_dependency"]["authentication"][field] = "*****"
         
     logging.debug(f"REQUEST BODY: {json.dumps(model_args_clean, indent=4)}")
-    print('MODEL ARGS', model_args)
     return model_args
 
 async def send_chat_request(request):
@@ -1669,8 +1668,9 @@ async def upload_documents():
                 account_url=storage_account_url, 
                 credential=AZURE_STORAGE_KEY
             )
-
+            print('Got blob service client')
             container_client = blob_service_client.get_container_client(storage_container_name)
+            print('Got container client')
             try:
                 container_client.create_container()
                 print(f"Container '{storage_container_name}' created.")
@@ -1678,13 +1678,16 @@ async def upload_documents():
                 if "ContainerAlreadyExists" in str(e):
                     print(f"Container '{storage_container_name}' already exists.")
                 else:
+                    print(f"Error creating container: {e}")
                     raise e
-            
+            print('Container created')
             blob_client = blob_service_client.get_blob_client(
                 container=storage_container_name,
                 blob=file_name
             )
+            print('Getting blob client')
             blob_client.upload_blob(doc.stream, overwrite=True)
+            print('Uploading blob')
             uploadedFiles.append((file_name, blob_client.url))
             print(f"Successfully uploaded {file_name} at location {blob_client.url}.")
         return jsonify({"Documents": uploadedFiles}, 200)
@@ -1709,6 +1712,7 @@ async def get_documents():
         print(f"Successfully retrieved documents: {blob_data}")
         return jsonify(blob_data), 200
     except Exception as ex:
+        print(f"Failed to get documents. Exception: {ex}")
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
 
 @bp.route("/delete_documents", methods=["POST"])
