@@ -1164,7 +1164,6 @@ def chunkString(text, chunk_size,overlap):
     return chunked_content_list
 
 async def collect_documents(filenames, container_name):
-    timestart = time.time()
     try:
         container_client = init_container_client(container_name)
     except Exception as e:
@@ -1202,20 +1201,15 @@ async def collect_documents(filenames, container_name):
         
         except Exception as e:
             print(f"Error downloading document: {e}")
-    print("All documents collected. length: ", len(docString))
-    timeend = time.time()
-    print(f"Time taken to collect documents: {timeend - timestart} seconds")
 
     return docString
 
 
 async def collect_documents_from_index(filenames, user_id):
-    timestart = time.time()
     allDocsString = ""
-    encoder = tiktoken.get_encoding("cl100k_base")
     for filename in filenames:
         print(f"Collecting document: {filename} which is document {filenames.index(filename)+1} of {len(filenames)}")
-        # allDocsString += f" START OF DOCUMENT {filenames.index(filename)+1}, {filename}:"
+        allDocsString += f" START OF DOCUMENT {filenames.index(filename)+1}, {filename}:"
         try:
             search_client = init_search_client()
             search_results = search_client.search(
@@ -1235,9 +1229,6 @@ async def collect_documents_from_index(filenames, user_id):
         except Exception as e:
             print(f"Error collecting chunks from search index: {e}")
             raise e
-    print("All documents collected. length: ", len(allDocsString))
-    timeend = time.time()
-    print(f"Time taken to collect documents: {timeend - timestart} seconds")
     return allDocsString
 
 def merge_chunks(chunks, overlap=200):
