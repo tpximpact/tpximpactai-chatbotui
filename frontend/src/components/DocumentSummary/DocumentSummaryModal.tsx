@@ -135,12 +135,13 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
     }
 
     const handleSummarise = (filenames: string[]) => {
-        let totalTokens = 0;
+        let totalChunks = 0;
         for (const filename of filenames) {
             console.log(docData[filename])
-            totalTokens =+ parseInt(docData[filename]); 
+            totalChunks =+ parseInt(docData[filename]);
         }
-        if (totalTokens > 4000) {
+        console.log('total:', totalChunks)
+        if (totalChunks > 4) { 
             setSummarising(filenames);
         }else{
             console.log('short')

@@ -1201,8 +1201,67 @@ async def collect_documents(filenames, container_name):
         
         except Exception as e:
             print(f"Error downloading document: {e}")
-    
+
     return docString
+
+
+async def collect_documents_from_index(filenames, user_id):
+    allDocsString = ""
+    for filename in filenames:
+        print(f"Collecting document: {filename} which is document {filenames.index(filename)+1} of {len(filenames)}")
+        allDocsString += f" START OF DOCUMENT {filenames.index(filename)+1}, {filename}:"
+        try:
+            search_client = init_search_client()
+            search_results = search_client.search(
+                search_text="*",  # Use '*' to match all documents
+                filter=f"user_id eq '{user_id}' and filename eq '{filename}'",
+                search_fields=["user_id", "filename"],
+                select=["id", "content"],  # Adjust fields based on your index schema
+                order_by=["id"]  # Ensure the chunks are ordered by 'id'
+            )
+            if not search_results:
+                raise Exception("No results found in search index")
+            docString = ""
+            chunks = [doc['content'] for doc in search_results]
+            docString = merge_chunks(chunks)
+
+            allDocsString += docString
+        except Exception as e:
+            print(f"Error collecting chunks from search index: {e}")
+            raise e
+    return allDocsString
+
+def merge_chunks(chunks, overlap=200):
+    window_size = 10
+    merged_tokens = []
+    previous_tokens = []
+    encoding = tiktoken.get_encoding("cl100k_base")
+    for chunk in chunks:
+        current_tokens = encoding.encode(chunk)
+
+        if previous_tokens:
+            # Find the overlap using a sliding window
+            overlap_tokens = previous_tokens[-overlap:]
+            overlap_index = 0
+            best_overlap_length = 0
+
+            for i in range(len(overlap_tokens) - window_size + 1):
+                window = overlap_tokens[i:i + window_size]
+                for j in range(len(current_tokens) - window_size + 1):
+                    if window == current_tokens[j:j + window_size]:
+                        overlap_length = len(overlap_tokens) - i
+                        if overlap_length > best_overlap_length:
+                            best_overlap_length = overlap_length
+                            overlap_index = i
+                        break
+
+            current_tokens = current_tokens[best_overlap_length:]
+
+        merged_tokens.extend(current_tokens)
+        previous_tokens = current_tokens
+
+    return encoding.decode(merged_tokens)
+
 
 async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
     azure_openai_client = init_openai_client(use_data=False)
@@ -1240,7 +1299,7 @@ async def refineProgress():
             if not prompt == '':
                 prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
             try:
-                document = await collect_documents(filenames, container_name)
+                document = await collect_documents_from_index(filenames, container_name)
             except Exception as e:
                 print(f"Error collecting documents: {e}")
                 return
@@ -1274,7 +1333,8 @@ async def documentsummary():
 
     if len(filenames) == 0:
         return jsonify({"error": "Filenames not found"}), 400
-    docString = await collect_documents(filenames, storage_container_name)
+    # await collect_documents_from_index(filenames, storage_container_name)
+    docString = await collect_documents_from_index(filenames, storage_container_name)
     num_tokens = len(encoding.encode(docString))
     if not prompt == '':
         prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
@@ -1319,10 +1379,10 @@ async def create_search_index():
 
         # define the fields we want the index to contain
         fields = [
-            SimpleField(name="id", type=SearchFieldDataType.String, key=True),
+            SimpleField(name="id", type=SearchFieldDataType.String, key=True, sortable=True),
             SearchableField(name="user_id", type=SearchFieldDataType.String, filterable=True),
             SimpleField(name="doc_url", type=SearchFieldDataType.String),
-            SearchableField(name="filename", type=SearchFieldDataType.String, filterable=True),
+            SearchableField(name="filename", type=SearchFieldDataType.String, filterable=True, facetable=True),
             SearchableField(name="content", type=SearchFieldDataType.String),
             SearchField(
                 name="content_vector", 
@@ -1699,18 +1759,37 @@ async def upload_documents():
 @bp.route("/get_documents", methods=["GET"])
 async def get_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
-    container_client = init_container_client(authenticated_user['user_principal_id'])
+    user_id = authenticated_user['user_principal_id']
+    container_client = init_container_client(user_id)
     try:
         blob_list = container_client.list_blob_names()
-        # blob_names = [blob for blob in blob_list]
-        # return jsonify(blob_names), 200
-        blob_data = {} 
+        filenames_with_counts = {} 
         for blob in blob_list:
             blob_client = container_client.get_blob_client(blob)
-            blob_data[blob] = blob_client.get_blob_properties().metadata['num_tokens']
-            print('Blob name: ' + blob + ' Number of tokens: ' + blob_data[blob])
-        print(f"Successfully retrieved documents: {blob_data}")
-        return jsonify(blob_data), 200
+            filenames_with_counts[blob] = blob_client.get_blob_properties().metadata['num_tokens']
+            print('Blob name: ' + blob + ' Number of tokens: ' + filenames_with_counts[blob])
+        print(f"Successfully retrieved documents: {filenames_with_counts}")
+
+        ### If storage is not being used the data can be retrieved from the search index ###
+
+        # search_client = init_search_client()
+        # search_results = search_client.search(
+        #     search_text=user_id,
+        #     search_fields=["user_id"],
+        #     facets=["filename"],  # Using facets to get unique filenames
+        #     top=0,  # We don't need the actual documents, just the facets
+        #     include_total_count=True
+        # )
+        # facet_results = search_results.get_facets()
+        # print(facet_results)
+        # if 'filename' in facet_results:
+        #     filenames_with_counts = {facet['value']: str(facet['count']) for facet in facet_results['filename'][:10]}
+        # else:
+        #     filenames_with_counts = {}
+        # print(f"successfully retrieved documents from search index:{filenames_with_counts}")
+
+
+        return jsonify(filenames_with_counts), 200
     except Exception as ex:
         print(f"Failed to get documents. Exception: {ex}")
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
