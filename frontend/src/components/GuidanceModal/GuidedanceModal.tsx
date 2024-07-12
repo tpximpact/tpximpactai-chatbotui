@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, IconButton } from '@fluentui/react';
-import styles from './Chat.module.css'; 
+import styles from './GuidanceModal.module.css'; 
 
 interface CustomModalProps {
   isOpen: boolean;

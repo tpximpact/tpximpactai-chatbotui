@@ -14,7 +14,6 @@ export interface GroupedChatHistory {
 const groupByMonth = (entries: Conversation[]) => {
     const groups: GroupedChatHistory[] = [{ month: "Recent", entries: [] }];
     const currentDate = new Date();
-  
     entries.forEach((entry) => {
         const date = new Date(entry.date);
         const daysDifference = (currentDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
@@ -53,7 +52,6 @@ const groupByMonth = (entries: Conversation[]) => {
             return dateB.getTime() - dateA.getTime();
         });
     });
-  
     return groups;
 };
 
@@ -75,7 +73,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = () => {
             </StackItem>
         </Stack>
     }
-    
+
     return (
         <ChatHistoryListItemGroups groupedChatHistory={groupedChatHistory}/>
     );

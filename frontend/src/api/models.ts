@@ -31,6 +31,7 @@ export type ChatMessage = {
     date: string;
     feedback?: Feedback;
     context?: string;
+    hidden?: boolean;
 };
 
 export type Conversation = {
@@ -65,6 +66,7 @@ export type ChatResponse = {
 
 export type ConversationRequest = {
     messages: ChatMessage[];
+    filenames?: string[];
 };
 
 export type UserInfo = {
@@ -104,6 +106,7 @@ export type ErrorMessage = {
 
 export type UI = {
     title: string;
+    chat_pre_title: string;
     chat_title: string;
     chat_description: string;
     logo?: string;
@@ -116,6 +119,7 @@ export type FrontendSettings = {
     feedback_enabled?: string | null;
     ui?: UI;
     sanitize_answer?: boolean;
+    dev_mode?: boolean;
 }
 
 export enum Feedback {

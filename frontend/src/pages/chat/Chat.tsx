@@ -1,18 +1,19 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
-import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal } from "@fluentui/react";
-import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
+import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Modal, buttonProperties } from "@fluentui/react";
+import { SquareRegular, ShieldLockRegular, ErrorCircleRegular, Dismiss12Regular, Dismiss16Regular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
-import { isEmpty } from "lodash-es";
+import { isEmpty, set } from "lodash-es";
 import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
-import Contoso from "../../assets/Contoso.svg";
-import PrimaryBlack from "../../assets/Primary black logo.png";
-import SecondaryX from  "../../assets/Secondary X.png";
+import SecondaryXCropped from  "../../assets/Secondary X Cropped.png";
+import Butterfly from  "../../assets/tpxbutterflypurple.png";
+
+
 import { XSSAllowTags } from "../../constants/xssAllowTags";
 import arrowLeft from "../../assets/fatarrowleft.png";
 import arrowRight from "../../assets/fatarrowright.png";
@@ -33,15 +34,16 @@ import {
     historyClear,
     ChatHistoryLoadingState,
     CosmosDBStatus,
-    ErrorMessage
+    ErrorMessage,
 } from "../../api";
 import { Answer } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
 import { AppStateContext } from "../../state/AppProvider";
 import { useBoolean } from "@fluentui/react-hooks";
-import { HistoryArrowButton } from "../../components/common/Button";
-import GuideanceModal from "./GuidedanceModal";
+import GuideanceModal from "../../components/GuidanceModal/GuidedanceModal";
+import DocumentSummaryModal from "../../components/DocumentSummary/DocumentSummaryModal";
+import Loading from "../../components/Loading";
 
 const enum messageStatus {
     NotRunning = "Not Running",
@@ -52,9 +54,11 @@ const enum messageStatus {
 const Chat = () => {
     const appStateContext = useContext(AppStateContext)
     const ui = appStateContext?.state.frontendSettings?.ui;
+    const dev_mode = appStateContext?.state.frontendSettings?.dev_mode;
     const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled;
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [chatHistoryLoading, setChatHistoryLoading] = useState<boolean>(false);
     const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false);
     const [activeCitation, setActiveCitation] = useState<Citation>();
     const [isCitationPanelOpen, setIsCitationPanelOpen] = useState<boolean>(false);
@@ -65,19 +69,22 @@ const Chat = () => {
     const [clearingChat, setClearingChat] = useState<boolean>(false);
     const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true);
     const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
+    const [filenames, setFilenames] = useState<string[]>([]);
 
     const errorDialogContentProps = {
         type: DialogType.close,
         title: errorMsg?.title,
         closeButtonAriaLabel: 'Close',
         subText: errorMsg?.subtitle,
+        styles: { subText: { fontFamily:'DMSans-Regular' }, title: { fontFamily:'PlayfairDisplay-Regular' }, inner: { fontFamily:'DMSans-Regular' }, content: { fontFamily:'DMSans-Regular'}},
+
     };
 
     const modalProps = {
         titleAriaId: 'labelId',
         subtitleAriaId: 'subTextId',
         isBlocking: true,
-        styles: { main: { maxWidth: 450 } },
+        styles: { main: { maxWidth: 450, borderRadius:'20px' } },
     }
 
     const [ASSISTANT, TOOL, ERROR] = ["assistant", "tool", "error"]
@@ -104,7 +111,13 @@ const Chat = () => {
     }
 
     useEffect(() => {
-        setIsLoading(appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading)
+        const historyLoading  = appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading
+        setChatHistoryLoading(historyLoading)
+        setIsLoading(historyLoading)
+        if (!appStateContext?.state.isChatHistoryOpen){
+            appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+        }
+
     }, [appStateContext?.state.chatHistoryLoadingState])
 
     const getUserInfoList = async () => {
@@ -130,7 +143,6 @@ const Chat = () => {
             assistantContent += resultMessage.content
             assistantMessage = resultMessage
             assistantMessage.content = assistantContent
-
             if (resultMessage.context) {
                 toolMessage = {
                     id: uuid(),
@@ -142,7 +154,6 @@ const Chat = () => {
         }
 
         if (resultMessage.role === TOOL) toolMessage = resultMessage
-
         if (!conversationId) {
             isEmpty(toolMessage) ?
                 setMessages([...messages, userMessage, assistantMessage]) :
@@ -152,19 +163,20 @@ const Chat = () => {
                 setMessages([...messages, assistantMessage]) :
                 setMessages([...messages, toolMessage, assistantMessage]);
         }
+
     }
 
-    const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string) => {
+    const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string, hidden?: boolean) => {
         setIsLoading(true);
         setShowLoadingMessage(true);
         const abortController = new AbortController();
         abortFuncs.current.unshift(abortController);
-
         const userMessage: ChatMessage = {
             id: uuid(),
             role: "user",
             content: question,
             date: new Date().toISOString(),
+            hidden: hidden ? hidden : false
         };
 
         let conversation: Conversation | null | undefined;
@@ -192,7 +204,7 @@ const Chat = () => {
         setMessages(conversation.messages)
 
         const request: ConversationRequest = {
-            messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)]
+            messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)],
         };
 
         let result = {} as ChatResponse;
@@ -278,17 +290,17 @@ const Chat = () => {
         return abortController.abort();
     };
 
-    const makeApiRequestWithCosmosDB = async (question: string, conversationId?: string) => {
+    const makeApiRequestWithCosmosDB = async (question: string, conversationId?: string, hidden?: boolean) => {
         setIsLoading(true);
         setShowLoadingMessage(true);
         const abortController = new AbortController();
         abortFuncs.current.unshift(abortController);
-
         const userMessage: ChatMessage = {
             id: uuid(),
             role: "user",
             content: question,
             date: new Date().toISOString(),
+            hidden: hidden ? hidden : false
         };
 
         //api call params set here (generate)
@@ -305,12 +317,14 @@ const Chat = () => {
             } else {
                 conversation.messages.push(userMessage);
                 request = {
-                    messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)]
+                    messages: [...conversation.messages.filter((answer) => answer.role !== ERROR)],
+                    filenames: filenames && !hidden ? filenames : []
                 };
             }
         } else {
             request = {
-                messages: [userMessage].filter((answer) => answer.role !== ERROR)
+                messages: [userMessage].filter((answer) => answer.role !== ERROR),
+                filenames: filenames && !hidden ? filenames : []
             };
             setMessages(request.messages)
         }
@@ -320,6 +334,27 @@ const Chat = () => {
             if (!response?.ok) {
                 const responseJson = await response.json();
                 var errorResponseMessage = responseJson.error === undefined ? "Please try again. If the problem persists, please contact the site administrator." : responseJson.error;
+                const errorMessageContent = responseJson
+                const jsonStartIndex = errorResponseMessage.indexOf("{");
+
+                // Extract the JSON string
+                const jsonString = errorResponseMessage.substring(jsonStartIndex);
+                console.log('json string:', jsonString)
+                const validJsonString = jsonString.replace(/(\w+)'(\s*:\s*)'([^']+)'/g, '"$1"$2"$3"')
+                .replace(/'(\w+)':/g, '"$1":');                
+                console.log('json valid string', validJsonString)
+                // Parse the JSON string
+                try{
+
+                    const jsonError = JSON.parse(validJsonString);
+                    console.log(jsonError)
+                    console.log(jsonError.code)
+    
+                }
+                catch( e) {
+                    console.log(e)
+                }
+                
                 let errorChatMsg: ChatMessage = {
                     id: uuid(),
                     role: ERROR,
@@ -458,7 +493,6 @@ const Chat = () => {
                 } else {
                     if (!result.history_metadata) {
                         console.error("Error retrieving data.", result);
-                        console.log("errorMessage", errorMessage)
                         let errorChatMsg: ChatMessage = {
                             id: uuid(),
                             role: ERROR,
@@ -636,7 +670,8 @@ const Chat = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const openModal = () => {
-      setIsModalOpen(true);
+    //   setIsModalOpen(true);
+    window.open("https://docs.google.com/document/d/1VTs09xtQziGbRNg-wHpTuJR7VBnATOujTtxrADG9g6s", "_blank");
     };
   
     const closeModal = () => {
@@ -654,63 +689,89 @@ const Chat = () => {
       setIsHModalOpen(false);
     };
 
+    const [isDocSumModalOpen, setIsDocSumModalOpen] = useState(false);
+
+    const openDocSumModal = () => {
+      setIsDocSumModalOpen(true);
+    };
+
+    const closeDocSumModal = () => {
+      setIsDocSumModalOpen(false);
+    };
+
     return (
         <div className={styles.container} role="main">
             {showAuthMessage ? (
-                <Stack className={styles.chatEmptyState}>
-                    {/* <ShieldLockRegular className={styles.chatIcon} style={{ color: 'darkorange', height: "200px", width: "200px" }} />
-                    <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
-                    <h2 className={styles.chatEmptyStateSubtitle}>
-                        This app does not have authentication configured. Please add an identity provider by finding your app in the <a href="https://portal.azure.com/" target="_blank">Azure Portal</a> 
-                        and following <a href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization" target="_blank">these instructions</a>.
-                    </h2>
-                    <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>Authentication configuration takes a few minutes to apply. </strong></h2>
-                    <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong></h2> */}
-                </Stack>
+                // <Stack horizontal className={styles.chatRoot}>
+                // <div className={styles.chatContainer}>
+                //     <Stack className={styles.chatEmptyState}>
+                //         <ShieldLockRegular className={styles.chatIcon} style={{ color: 'black', height: "200px", width: "200px" }} />
+                //         <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
+                //         <h2 className={styles.chatEmptyStateSubtitle}>
+                //             This app does not have authentication configured. Please add an identity provider by finding your app in the <a href="https://portal.azure.com/" target="_blank">Azure Portal</a> 
+                //             and following <a href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization" target="_blank">these instructions</a>.
+                //         </h2>
+                //         <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>Authentication configuration takes a few minutes to apply. </strong></h2>
+                //         <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: "20px" }}><strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong></h2>
+                //     </Stack>
+                //     </div>
+                // </Stack>
+                null
             ) : (
                 <Stack horizontal className={styles.chatRoot}>
 
                     {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
 
                     <div className={styles.chatContainer}>
+
                     <div
-  style={{
-    transform: 'scaleX(0.7)',
-    position: "absolute",
-    top: '45%',
-    left: "0px",
-    display: appStateContext?.state?.isChatHistoryOpen ? "none" : "block",
- // Add cursor style to indicate it's clickable
-  }}
->
-  {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && (
-    <img
-    onClick={handleHistoryClick}
+                        style={{
+                            transform: 'scaleX(0.7)',
+                            position: "absolute",
+                            top: '45%',
+                            left: "0px",
+                            display: appStateContext?.state?.isChatHistoryOpen ? "none" : "block",
+                        }}
+                        >
+                        {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && (
+                            <img
+                            onClick={handleHistoryClick}
 
-      src={appStateContext?.state?.isChatHistoryOpen ? arrowLeft : arrowRight}
-      alt="Arrow"
-      style={{ width: '70px', height: 'auto',cursor: 'pointer', padding:'20px'}}
-    />
-  )}
-</div>
-
-
+                            src={appStateContext?.state?.isChatHistoryOpen ? arrowLeft : arrowRight}
+                            alt="Arrow"
+                            style={{ width: '70px', height: 'auto',cursor: 'pointer', padding:'20px'}}
+                            />
+                        )}
+                        </div>
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
+                                <div style = {{display:'flex', flexDirection:'row', position:'relative'}}>
+                                    <div style = {{display:'flex', flexDirection:'column'}}>
+                                        <span className={styles.chatEmptyStatePreTitle}>{ui?.chat_pre_title}</span>
+                                        <span className={styles.chatEmptyStateTitle}>{ui?.chat_title}</span>
+                                    </div>
+
                                 <img
-                                    src={ui?.chat_logo ? ui.chat_logo : SecondaryX}
+                                    src={ui?.chat_logo ? ui.chat_logo : SecondaryXCropped}
                                     className={styles.chatIcon}
                                     aria-hidden="true"
+                                    />
+                                    <img
+                                    src={ui?.chat_logo ? ui.chat_logo : Butterfly}
+                                    className={styles.chatIconSecondary}
+                                    aria-hidden="true"
                                 />
-                                <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
-                                <h2 className={styles.chatEmptyStateSubtitle}>  
+
+                                </div>
+                                <h2 className={styles.chatEmptyStateSubtitle}>
+
                                 {ui?.chat_description ? (
                                     <>
                                     {ui.chat_description}
                                     </>
                                 ) : (
                                     <>
-                                    This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
+                                    {dev_mode ? "DEV MODE. " : null}This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>
@@ -723,17 +784,16 @@ const Chat = () => {
                                 )}
                                 </h2>
                                 <GuideanceModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                    />
-
+                                    isOpen={isModalOpen}
+                                    onClose={closeModal}
+                                />
                             </Stack>
 
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px" }} role="log">
                                 {messages.map((answer, index) => (
                                     <>
-                                        {answer.role === "user" ? (
+                                        {answer.role === "user" && !answer.hidden ? (
                                             <div className={styles.chatMessageUser} tabIndex={0}>
                                                 <div className={styles.chatMessageUserMessage}>{answer.content}</div>
                                             </div>
@@ -776,13 +836,48 @@ const Chat = () => {
                         )}
 
                         <Stack horizontal className={styles.chatInput}>
-                            {isLoading && (
+                            <div className= {styles.statusBarContainer}>
+
+                            {filenames.length! > 0 && (
+                                <Stack
+                                horizontal
+                                className={styles.askingQuestionsContainer}
+                                role="button"
+                                aria-label="Stop generating"
+                                tabIndex={0}
+                                onClick={() => {setFilenames([])}}
+                                onKeyDown={e => e.key === "Enter" || e.key === " " ? setFilenames([]) : null}
+                            >
+                                <span className={styles.askingQuestionsText} aria-hidden="true">
+                                    Asking questions about 
+                                </span>
+
+                                {filenames.length == 1 ? 
+                                    <span className ={styles.stopGeneratingText} aria-hidden="true">
+                                        {filenames[0]}
+                                    </span>
+                                :
+                                    <>
+                                    <span className ={styles.stopGeneratingText} aria-hidden="true">
+                                        {filenames.length}
+                                    </span>
+                                    <span className={styles.askingQuestionsText} aria-hidden="true">
+                                        documents
+                                    </span>
+                                    </>
+                                }
+
+                                <Dismiss12Regular className={styles.stopGeneratingIcon} aria-hidden="true" />
+                            </Stack>
+                            
+                            )}
+                            {(isLoading && !chatHistoryLoading) && (
                                 <Stack
                                     horizontal
                                     className={styles.stopGeneratingContainer}
                                     role="button"
                                     aria-label="Stop generating"
-                                    tabIndex={0}
+                                    tabIndex={1}
                                     onClick={stopGenerating}
                                     onKeyDown={e => e.key === "Enter" || e.key === " " ? stopGenerating() : null}
                                 >
@@ -790,6 +885,15 @@ const Chat = () => {
                                     <span className={styles.stopGeneratingText} aria-hidden="true">Stop generating</span>
                                 </Stack>
                             )}
+                            {chatHistoryLoading && (
+                              <div className={styles.chatHistoryLoading}>
+                                <span className={styles.stopGeneratingText} style= {{marginRight:'2px'}}>Loading chat history</span>
+                                <Loading size={15} color="#000000" />
+
+                              </div>
+                            )}
+                            </div>
+       
                             <Stack>
                                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <CommandBarButton
                                     role="button"
@@ -804,7 +908,7 @@ const Chat = () => {
                                             color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            background: "#F0F0F0"
+                                            background: "#FFFFFF"
                                         },
                                         rootHovered: {
                                             background: '#cafce5',
@@ -814,7 +918,7 @@ const Chat = () => {
                                         }
                                     }}
                                     className={styles.newChatIcon}
-                                    iconProps={{ iconName: 'Add' }}
+                                    iconProps={{ iconName: 'SingleColumnEdit' }}
                                     onClick={newChat}
                                     disabled={disabledButton()}
                                     aria-label="start a new chat button"
@@ -832,7 +936,7 @@ const Chat = () => {
                                             color: "#BDBDBD !important",
                                         },
                                         root: {
-                                            background: "#F0F0F0"
+                                            background: "#FFFFFF"
                                         },
                                         rootHovered: {
                                             background: '#ffcfca',
@@ -841,11 +945,11 @@ const Chat = () => {
                                             background: "#F0F0F0"
                                         }
                                     }}
-                                    className={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? styles.clearChatBroom : styles.clearChatBroomNoCosmos}
-                                    iconProps={{ iconName: 'Broom' }}
-                                    onClick={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? clearChat : newChat}
-                                    disabled={disabledButton()}
-                                    aria-label="clear chat button"
+                                    className={styles.documentSummaryIcon}
+                                    iconProps={{ iconName: 'BulkUpload' }}
+                                    onClick={openDocSumModal}
+                                    disabled={false}
+                                    aria-label="document summary button"
                                 />
                                 <Dialog
                                     hidden={hideErrorDialog}
@@ -854,6 +958,18 @@ const Chat = () => {
                                     modalProps={modalProps}
                                 >
                                 </Dialog>
+                                <DocumentSummaryModal
+                disabled={isLoading}
+                isOpen={isDocSumModalOpen}
+                onClose={closeDocSumModal}
+                onSend={(question, id) => {
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB ? makeApiRequestWithCosmosDB(question, id, true) : makeApiRequestWithoutCosmosDB(question, id, true)
+                }}
+                conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
+                setFilenames={setFilenames}
+                filenames={filenames}
+                    />
+
                             </Stack>
                             <QuestionInput
                                 clearOnSend
@@ -864,18 +980,19 @@ const Chat = () => {
                                 }}
                                 conversationId={appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined}
                             />
-                        </Stack>
-                            <span style= {{display:'inline', position:'absolute', bottom:'21px', color:'black', fontSize:'14px'}}> 
-                                Always fact-check responses thoroughly for accuracy and<a 
-                                href='#'
-                                onClick={ () => {
-                                    setIsHModalOpen(true)
-                                }}
-                                style = {{
-                                    color:'blue'
-                                }}
-                                >hallucination.</a>
+                            <span style= {{whiteSpace: 'nowrap', overflow:'clip', position:'absolute', bottom:'-45px', color:'black', fontSize:'14px', width:'100%', textAlign:'center'}}> 
+                                Always fact-check responses thoroughly for accuracy and
+                                <a 
+                                    href='#'
+                                    onClick={openHModal}
+                                    style = {{
+                                        color:'blue'
+                                    }}
+                                    >hallucination.
+                                </a>
                             </span>
+
+                        </Stack>
                             <Modal
                                   styles= {{main: {borderRadius:'20px', width:'65%'} } }
                                   isOpen={isHModalOpen}
@@ -909,7 +1026,7 @@ const Chat = () => {
                         <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
                             <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
                                 <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
-                                <IconButton iconProps={{ iconName: 'Cancel' }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
+                                <IconButton iconProps={{ iconName: 'Cancel', styles: {root: {color:'black'}} }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
                             </Stack>
                             <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
                             <div tabIndex={0}>

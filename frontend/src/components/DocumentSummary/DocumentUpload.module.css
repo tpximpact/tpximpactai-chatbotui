@@ -1,0 +1,183 @@
+.container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .loadingContainer {
+    justify-content: center;
+    align-content: center;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    display: flex;
+  }
+  
+  .loadingBox {
+    height: 250px;
+    margin: 30px;
+    padding: 60px;
+    border-width: 2px;
+    padding-top: 100px;
+  }
+  
+  .fileUploadContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+  }
+  
+  .dragZoneContainer {
+    justify-content: center;
+    align-content: center;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    display: flex;
+  }
+  
+  .dragZoneText {
+    text-align: center;
+    padding: 60px 30px;
+  }
+  
+  .documentsContainer {
+    display: flex;
+    flex-direction: row;
+    padding: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .document {
+    display: flex;
+    margin: 5px;
+    width: 110px;
+  }
+  
+  .dropzoneEmpty {
+    justify-content: center;
+    align-content: center;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    display: flex;
+    padding: 60px 30px;
+  }
+  
+  .dropzoneText {
+    text-align: center;
+  }
+  
+  .browseLink {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  
+  .controlPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-left: 5%;
+  }
+  
+  .documentCounter {
+    cursor: pointer;
+    border: 1px solid #141414;
+    display: flex;
+    border-width: 1px;
+    border-radius: 15px;
+    flex-direction: column;
+    padding: 10px 5px;
+    margin: 0px 10px 10px 10px;
+    justify-content: center;
+    align-content: center;
+    width: 80px;
+    transition: transform 0.2s ease;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .documentCounter:hover {
+    transform: scale(1.05); 
+}
+
+  
+  .documentCounterNormal {
+    background-color: #FFFFFF;
+  }
+  
+  .documentCounterSelected {
+    background-color: #cafce5; 
+  }
+  
+  .documentCounterText {
+    font-weight: bold;
+    text-align: center;
+    font-size: 18px;
+  }
+  
+  .documentCounterTextSmall {
+    font-size: 12px;
+    text-align: center;
+  }
+  
+  .commandBarButton {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    color: #FFFFFF;
+    border-radius: 50px;
+    border: 1px solid #141414;
+    border-bottom-width: 4px;
+    margin: 10px;
+  }
+  
+  .bottomRow {
+    width: 100%;
+    flex-direction: row;
+    display: flex;
+    justify-content: center;
+  }
+  
+.button {
+    border: 1px solid #141414;
+    display: flex;
+    border-width: 1px;
+    border-radius: 25px;
+    flex-direction: column;
+    padding: 20px;
+    margin: 0px 10px 10px 10px;
+    justify-content: center;
+    align-content: center;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    width: 50%;
+    transition: transform 0.2s ease; 
+    cursor: pointer;
+  }
+  
+.button:not(.buttonDisabled):hover {
+    transform: scale(1.05);
+}
+
+
+.buttonDisabled {
+  border-color: #BDBDBD;
+}
+  
+  .buttonText {
+    font-weight: bold;
+    text-align: center;
+    font-size: 16px;
+    font-family: 'DMSans-Regular';
+  }
+  
+  .buttonTextDisabled {
+    color: #BDBDBD;
+  }

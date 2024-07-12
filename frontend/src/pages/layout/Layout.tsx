@@ -9,7 +9,6 @@ import { AppStateContext } from "../../state/AppProvider";
 import { CosmosDBStatus } from "../../api";
 import PrimaryX from "../../assets/Primary X.png";
 import PrimaryWhiteLogo from  "../../assets/Primary white logo.png";
-import arrowLeft from "../../assets/arrow.png";
 
 const Layout = () => {
     const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false);
@@ -66,7 +65,6 @@ const Layout = () => {
     
         return () => window.removeEventListener('resize', handleResize);
       }, []);
-    console.log('ui title is :',  ui?.title ? ui.title : "TPXimpact AI")
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>

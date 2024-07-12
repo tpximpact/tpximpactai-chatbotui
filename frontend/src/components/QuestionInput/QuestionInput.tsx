@@ -1,10 +1,11 @@
 import { useContext, useState } from "react";
 import { Stack, TextField } from "@fluentui/react";
 import { SendRegular } from "@fluentui/react-icons";
-import Send from "../../assets/Send.svg";
+import Send from "../../assets/SendGreen.svg";
 import styles from "./QuestionInput.module.css";
 import { AppStateContext } from "../../state/AppProvider";
 import UseCaseModal from "./UseCaseModal";
+import COLOURS from "../../constants/COLOURS";
 
 interface Props {
     onSend: (question: string, id?: string) => void;
@@ -23,6 +24,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         }
 
         if(conversationId){
+            console.log("question: ", question, "conversationId: ", conversationId)
             onSend(question, conversationId);
         }else{
             onSend(question);
@@ -88,7 +90,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
                 onKeyDown={e => e.key === "Enter" || e.key === " " ? sendQuestion() : null}
             >
                 { sendQuestionDisabled ? 
-                    <SendRegular className={styles.questionInputSendButtonDisabled}/>
+                    <SendRegular className={styles.questionInputSendButtonDisabled} />
                     :
                     <img src={Send} className={styles.questionInputSendButton}/>
                 }

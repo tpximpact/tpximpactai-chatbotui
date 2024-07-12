@@ -16,6 +16,42 @@ export async function conversationApi(options: ConversationRequest, abortSignal:
     return response;
 }
 
+export async function documentSummaryApi(filenames: string[], prompt: string): Promise<Response> {
+    try {
+        const response = await fetch("/documentsummary", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ filenames, prompt }), // Serialize the object to JSON
+        });
+        return response;
+    } catch (error) {
+        // Handle fetch errors
+        console.error("Error fetching data:", error);
+        throw error; // Re-throw the error to be caught by the caller
+    }
+}
+
+
+export async function documentSummaryReduceApi(filenames: string[], prompt: string): Promise<Response> {
+    try {
+        const response = await fetch("/documentsummary/reduce", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ filenames, prompt }), // Serialize the object to JSON
+        });
+        return response;
+    } catch (error) {
+        // Handle fetch errors
+        console.error("Error fetching data:", error);
+        throw error; // Re-throw the error to be caught by the caller
+    }
+}
+
+
 export async function getUserInfo(): Promise<UserInfo[]> {
     const response = await fetch('/.auth/me');
     if (!response.ok) {
@@ -67,7 +103,6 @@ export const historyList = async (offset=0): Promise<Conversation[] | null> => {
         console.error("There was an issue fetching your data.");
         return null
     })
-
     return response
 }
 
@@ -94,7 +129,8 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
                     role: msg.role,
                     date: msg.createdAt,
                     content: msg.content,
-                    feedback: msg.feedback ?? undefined
+                    feedback: msg.feedback ?? undefined,
+                    hidden: msg.hidden ? true : false
                 }
                 messages.push(message)
             });
@@ -109,14 +145,17 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
 
 export const historyGenerate = async (options: ConversationRequest, abortSignal: AbortSignal, convId?: string): Promise<Response> => {
     let body;
+    console.log('OPTIONS:', JSON.stringify(options.messages))
     if(convId){
         body = JSON.stringify({
             conversation_id: convId,
-            messages: options.messages
+            messages: options.messages,
+            filenames: options.filenames
         })
     }else{
         body = JSON.stringify({
-            messages: options.messages
+            messages: options.messages,
+            filenames: options.filenames
         })
     }
     const response = await fetch("/history/generate", {
@@ -137,11 +176,12 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
 }
 
 export const historyUpdate = async (messages: ChatMessage[], convId: string): Promise<Response> => {
+    console.log("messages: ", messages)
     const response = await fetch("/history/update", {
         method: "POST",
         body: JSON.stringify({
             conversation_id: convId,
-            messages: messages
+            messages: messages,
         }),
         headers: {
             "Content-Type": "application/json"
@@ -311,9 +351,40 @@ export const frontendSettings = async (): Promise<Response | null> => {
         console.error("There was an issue fetching your data.");
         return null
     })
-
     return response
 }
+
+export const getDocuments = async (): Promise<Response | null> => {
+    const response = await fetch("/get_documents", {
+        method: "GET",
+    }).then((res) => {
+        return res
+    }).catch((err) => {
+        console.error("There was an issue fetching your data.");
+        return null
+    })
+    return response
+}
+
+export const deleteDocuments = async (filenames: string[]): Promise<Response | null> => {
+    const response = await fetch("/delete_documents", {
+        method: "POST",
+        body: JSON.stringify({
+            filenames: filenames
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        },
+    }).then((res) => {
+        return res
+    }).catch((err) => {
+        console.error("There was an issue fetching your data.");
+        return null
+    })
+    return response
+}
+
+
 export const historyMessageFeedback = async (messageId: string, feedback: string): Promise<Response> => {
     const response = await fetch("/history/message_feedback", {
         method: "POST",
@@ -330,6 +401,71 @@ export const historyMessageFeedback = async (messageId: string, feedback: string
     })
     .catch((err) => {
         console.error("There was an issue logging feedback.");
+        let errRes: Response = {
+            ...new Response,
+            ok: false,
+            status: 500,
+        }
+        return errRes;
+    })
+    return response;
+}
+
+
+export const createSearchIndex = async (): Promise<Response> => {
+    const response = await fetch("/create_search_index", {
+        method: "POST",
+    })
+    .then((res) => {
+        return res
+    })
+    .catch((err) => {
+        console.error("There was an issue creating the search index.");
+        let errRes: Response = {
+            ...new Response,
+            ok: false,
+            status: 500,
+        }
+        return errRes;
+    })
+    return response;
+}
+
+export const uploadFiles = async (files: FileList): Promise<Response> => {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        formData.append("file", files[i]);
+    }
+    const response = await fetch("/upload_documents", {
+        method: "POST",
+        body: formData,
+    })
+    .then((res) => {
+        return res
+    })
+    .catch((err) => {
+        console.error("There was an issue uploading the file.");
+        let errRes: Response = {
+            ...new Response,
+            ok: false,
+            status: 500,
+        }
+        return errRes;
+    })
+    return response;
+}
+
+
+
+export const getUserIdentity = async (): Promise<Response> => {
+    const response = await fetch("/get_user_id", {
+        method: "GET",
+    })
+    .then((res) => {
+        return res
+    })
+    .catch((err) => {
+        console.error("There was an issue fetching your data.");
         let errRes: Response = {
             ...new Response,
             ok: false,

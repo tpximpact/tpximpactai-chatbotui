@@ -7,6 +7,7 @@ import { AppStateContext } from "../../state/AppProvider";
 import React from "react";
 import ChatHistoryList from "./ChatHistoryList";
 import { ChatHistoryLoadingState, historyDeleteAll } from "../../api";
+import COLOURS from "../../constants/COLOURS";
 
 interface ChatHistoryPanelProps {
 
@@ -40,13 +41,15 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
         title: !clearingError? 'Are you sure you want to clear all chat history?' : 'Error deleting all of chat history',
         closeButtonAriaLabel: 'Close',
         subText: !clearingError ? 'All chat history will be permanently removed.' : 'Please try again. If the problem persists, please contact the site administrator.',
+        styles: { subText: { fontFamily:'DMSans-Regular' }, title: { fontFamily:'PlayfairDisplay-Regular' }, inner: { fontFamily:'DMSans-Regular' }, content: { fontFamily:'DMSans-Regular'}},
     };
     
     const modalProps = {
         titleAriaId: 'labelId',
         subtitleAriaId: 'subTextId',
         isBlocking: true,
-        styles: { main: { maxWidth: 450 } },
+        styles: { main: { maxWidth: 450, borderRadius:'20px', fontFamily:'DMSans-Regular' }},
+
     }
 
     const menuItems: IContextualMenuItem[] = [
@@ -180,8 +183,8 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
                 modalProps={modalProps}
             >
                 <DialogFooter>
-                {!clearingError && <PrimaryButton onClick={onClearAllChatHistory} disabled={clearing} text="Clear All" />}
-                <DefaultButton onClick={onHideClearAllDialog} disabled={clearing} text={!clearingError ? "Cancel" : "Close"} />
+                {!clearingError && <PrimaryButton onClick={onClearAllChatHistory} disabled={clearing} text="Clear All" style={{backgroundColor:COLOURS.blue, borderRadius:'12px', borderColor:COLOURS.blue}}/>}
+                <DefaultButton onClick={onHideClearAllDialog} disabled={clearing} text={!clearingError ? "Cancel" : "Close"} style={{borderRadius:'12px'}}/>
                 </DialogFooter>
             </Dialog>
         </section>

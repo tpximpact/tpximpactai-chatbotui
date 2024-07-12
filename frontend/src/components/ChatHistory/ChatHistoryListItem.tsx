@@ -287,7 +287,6 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
         setSelectedItem(item)
     }
   }
-
   const onRenderCell = (item?: Conversation) => {
     return (
       <ChatHistoryListItemCell item={item} onSelect={() => handleSelectHistory(item)} />
@@ -309,6 +308,7 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
 
         await historyList(offset).then((response) => {
             const concatenatedChatHistory = currentChatHistory && response && currentChatHistory.concat(...response)
+
             if (response) {
                 appStateContext?.dispatch({ type: 'FETCH_CHAT_HISTORY', payload: concatenatedChatHistory || response });
             } else {
@@ -344,7 +344,7 @@ export const ChatHistoryListItemGroups: React.FC<ChatHistoryListItemGroupsProps>
           <div ref={observerTarget} />
           <Separator styles={{
             root: {
-                width: '100%',
+                width: '90%',
                 position: 'relative',
                 '::before': {
                   backgroundColor: '#d6d6d6',
