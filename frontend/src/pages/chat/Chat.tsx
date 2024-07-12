@@ -54,6 +54,7 @@ const enum messageStatus {
 const Chat = () => {
     const appStateContext = useContext(AppStateContext)
     const ui = appStateContext?.state.frontendSettings?.ui;
+    const dev_mode = appStateContext?.state.frontendSettings?.dev_mode;
     const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled;
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -770,7 +771,7 @@ const Chat = () => {
                                     </>
                                 ) : (
                                     <>
-                                    DEV MODE. This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
+                                    {dev_mode ? "DEV MODE. " : null}This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>

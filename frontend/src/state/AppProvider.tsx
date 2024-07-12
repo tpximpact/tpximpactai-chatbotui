@@ -133,7 +133,7 @@ type AppStateProviderProps = {
         }
         getFrontendSettings();
     }, []);
-  
+
     return (
       <AppStateContext.Provider value={{ 
         state,

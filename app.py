@@ -100,11 +100,13 @@ async def assets(path):
 
 load_dotenv()
 
+# Dev mode
+DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
+
 # Debug settings
 DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
-
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
@@ -236,6 +238,7 @@ frontend_settings = {
         "chat_description": UI_CHAT_DESCRIPTION,
         "show_share_button": UI_SHOW_SHARE_BUTTON
     },
+    "dev_mode": DEV_MODE,
     "sanitize_answer": SANITIZE_ANSWER
 }
 
@@ -730,7 +733,7 @@ async def conversation():
     request_json = await request.get_json()
     return await conversation_internal(request_json)
 
-@bp.route("/frontend_settings", methods=["GET"])  
+@bp.route("/frontend_settings", methods=["GET"])
 def get_frontend_settings():
     try:
         return jsonify(frontend_settings), 200

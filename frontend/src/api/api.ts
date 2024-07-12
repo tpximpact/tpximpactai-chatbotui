@@ -103,7 +103,6 @@ export const historyList = async (offset=0): Promise<Conversation[] | null> => {
         console.error("There was an issue fetching your data.");
         return null
     })
-
     return response
 }
 
@@ -352,7 +351,6 @@ export const frontendSettings = async (): Promise<Response | null> => {
         console.error("There was an issue fetching your data.");
         return null
     })
-
     return response
 }
 
