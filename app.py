@@ -30,8 +30,6 @@ from backend.history.cosmosdbservice import CosmosConversationClient
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
 from opentelemetry.trace import SpanKind
-
-
 from opentelemetry import trace
 from opentelemetry import metrics
 
@@ -56,13 +54,17 @@ from openai import AzureOpenAI as BaseAzureOpenAI
 # from llama_index.core import download_loader
 from llama_index.readers.azstorage_blob import AzStorageBlobReader
 
-
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 tracer = trace.get_tracer(__name__)
 
-
-
 from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, generateSimpleFilterString, parse_multi_columns, format_non_streaming_response
+
+configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+from opentelemetry.trace import SpanKind
+tracer = trace.get_tracer(__name__)
+
+
+from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, parse_multi_columns, format_non_streaming_response
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
@@ -820,6 +822,7 @@ async def add_conversation():
 async def update_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
+    track_event("New-message", {"user": user_id, "key2": "value2"})
 
     ## check request for conversation_id
     request_json = await request.get_json()
@@ -922,6 +925,7 @@ async def delete_conversation():
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
+    track_event("Delete-convo", {"user": user_id, "key2": "value2"})
     
     ## check request for conversation_id
     request_json = await request.get_json()
