@@ -23,14 +23,14 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: https://tpximpactaicontainerreg.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_7432dc5d7fbb4e41a9f5f9e459d701ac }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_3537e1f89b1e477ba2f0208e655f0a7e }}
+        username: ${{ secrets.AzureAppService_ContainerUsername_13a53444a6154340b3b2cf93538aa0ff }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_e52581a8132845239805426ba1476760 }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_7432dc5d7fbb4e41a9f5f9e459d701ac }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}
+        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_13a53444a6154340b3b2cf93538aa0ff }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}
         file: ./Dockerfile
 
   deploy:
@@ -47,5 +47,5 @@ jobs:
       with:
         app-name: 'tpximpactai-webapp-dev'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_bbb0d40e86ce491ba12c3afc4c7d9489 }}
-        images: 'tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_7432dc5d7fbb4e41a9f5f9e459d701ac }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_4cdddbbf19d249779c7a54cd09e65c1a }}
+        images: 'tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_13a53444a6154340b3b2cf93538aa0ff }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}'
