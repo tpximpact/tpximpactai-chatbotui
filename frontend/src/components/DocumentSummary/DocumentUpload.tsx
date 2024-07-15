@@ -149,6 +149,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     }
     const onDrop = async (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
         // Upload ffiles then initiate websocket to add the files to the search index and recieve progress updates
+        
         setSelectedFiles([]);
         const fileNames = acceptedFiles.map(file => file.name);
         if (documents.length + fileNames.length > 10) {
