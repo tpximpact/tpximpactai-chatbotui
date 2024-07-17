@@ -10,6 +10,8 @@ import uuid
 import docx
 import io
 from dotenv import load_dotenv
+import tempfile
+
 
 from quart import (
     Blueprint,
@@ -57,7 +59,7 @@ from llama_index.readers.azstorage_blob import AzStorageBlobReader
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 tracer = trace.get_tracer(__name__)
 
-from backend.utils import format_as_ndjson, format_stream_response, generateFilterString, generateSimpleFilterString, parse_multi_columns, format_non_streaming_response
+from backend.utils import extract_text_from_docx, extract_text_from_pdf, extract_text_from_txt, format_as_ndjson, format_stream_response, generateFilterString, generateSimpleFilterString, parse_multi_columns, format_non_streaming_response
 
 configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
 from opentelemetry.trace import SpanKind
@@ -379,6 +381,31 @@ def init_cosmosdb_logs_client():
         
     return cosmos_logs_client
 
+def init_cosmosdb_document_metadata_client():
+    logging.debug("Initializing CosmosDB document metadata client")
+    cosmos_document_metadata_client = None
+    logging.debug("COSMOSDB ENABLED")
+    try:
+        cosmos_endpoint = f'https://{AZURE_COSMOSDB_ACCOUNT}.documents.azure.com:443/'
+
+        if not AZURE_COSMOSDB_ACCOUNT_KEY:
+            credential = DefaultAzureCredential()
+        else:
+            credential = AZURE_COSMOSDB_ACCOUNT_KEY
+
+        cosmos_document_metadata_client = CosmosConversationClient(
+            cosmosdb_endpoint=cosmos_endpoint, 
+            credential=credential, 
+            database_name=AZURE_COSMOSDB_DATABASE,
+            container_name="document_metadata",
+            enable_message_feedback=AZURE_COSMOSDB_ENABLE_FEEDBACK
+        )
+    except Exception as e:
+        logging.exception("Exception in CosmosDB document metadata initialization", e)
+        cosmos_document_metadata_client = None
+        raise e
+        
+    return cosmos_document_metadata_client
 
 def init_container_client(storage_container_name):
 
@@ -1281,7 +1308,7 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
     )
     return response.choices[0].message.content
 
-@bp.websocket('/documentsummary/refine')
+@bp.websocket('/documents/refine')
 async def refineProgress():
     try:
         
@@ -1329,7 +1356,7 @@ async def refineProgress():
         await websocket.close()
         
 
-@bp.route("/documentsummary/reduce", methods=["POST"])
+@bp.route("/documents/reduce", methods=["POST"])
 async def documentsummary():
     encoding = tiktoken.get_encoding("cl100k_base")
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
@@ -1458,28 +1485,34 @@ async def create_search_index():
              {"error": f"Processing failed. Exception: {ex}"}, 500
         )
 
-@bp.websocket('/process_documents')
+@bp.websocket('/documents/process')
 async def process_documents():
     encoding = tiktoken.get_encoding("cl100k_base")
     # adds documents to the Azure Cognitive Search index
     # and gives progress updates over a websocket
-    def convert_doc(documents, blob_name, url):
+    def convert_doc(documents, blob_name, url, isString=False):
+        print('CONVERTINNGGGGGGGGGG')
         print('Converting documents, there are ', len(documents), ' documents in this collection.')
         docs = []
         full_text = []
         num_tokens = 0
         doc_url_list = ['doc_url', 'user_id']
         
+        if isString:
+            print('is string')
+            full_text = documents
+            num_tokens += len(encoding.encode(documents[0]))
+        else:
         # for every page in the document
-        for document in documents:
-            # count the number of tokens in the document as this is the only time we're looking at the raw document text all in one place
-            num_tokens += len(encoding.encode(document.text))
+            for document in documents:
+                # count the number of tokens in the document as this is the only time we're looking at the raw document text all in one place
+                num_tokens += len(encoding.encode(document.text))
 
-            document.text = document.text.replace("\n",".  ").replace('..', '.')
-            document.text = re.sub(r"\s+", " ", document.text)
-            # extract and merge the text from individual pages
-            full_text.append(document.text)
-
+                document.text = document.text.replace("\n",".  ").replace('..', '.')
+                document.text = re.sub(r"\s+", " ", document.text)
+                # extract and merge the text from individual pages
+                full_text.append(document.text)
+        
         # create a new Document with metadata fields and all text in one Document
         docs.append(Document(
 
@@ -1492,7 +1525,7 @@ async def process_documents():
             # add metadata fields
             metadata = {
                 #'title': blob_name.replace('.pdf','').replace('.PDF',''),
-                'user_id': container_name,
+                'user_id': user_id,
                 'doc_url': url,
                 'filename': blob_name,
             },
@@ -1523,6 +1556,7 @@ async def process_documents():
             data = json.loads(data)
             list_of_lists = data['documents']
             container_name = data['container']
+            user_id = data['user_id']
             document_tuples = [tuple(item) for item in list_of_lists]
             print(f"document tuples: {document_tuples}.")
             print(f"list of lists: {list_of_lists}.")
@@ -1532,7 +1566,6 @@ async def process_documents():
 
                 # connect to an existing Azure Cognitive Search index
                 search_client = init_search_client()
-                container_client = init_container_client(container_name)
                 # define the llm model (using Azure OpenAI gpt-35-turbo model)
                 llm = AzureOpenAI(
                     model=AZURE_OPENAI_MODEL_NAME,
@@ -1551,56 +1584,75 @@ async def process_documents():
                 )
                 Settings.llm = llm
                 Settings.embed_model = embed_model
+                db = init_cosmosdb_document_metadata_client()
 
                 final_nodes = []
 
-                # process policy documents in each location
                 for doc in document_tuples:
-                    blob_name = doc[0]
-                    url = doc[1]
-                    num_tokens = 0
-                    blob_client = container_client.get_blob_client(blob_name)
-                    print(f"Reading document: {blob_name}")
-                    if blob_name.endswith('.docx'):
-                        print(f"Downloading document: {blob_name}")
-                        logging.info(f"Downloading document: {blob_name}")
-                        
-                        try:
-                            download_stream = blob_client.download_blob()
-                            with io.BytesIO() as output_stream:
-                                download_stream.readinto(output_stream)
-                                doc = docx.Document(output_stream)
-                                documents = []
-                                await websocket.send('2')
-                                for para in doc.paragraphs:
-                                    num_tokens += len(encoding.encode(para.text))
-                                    documents.append(para)
-                        except Exception as e:
-                            print(f"Error downloading document: {e}")
-                            await websocket.send(f"error: {e}")
-                            return
+                    documents = []
+                    if container_name == 'tmp':
+                        file_name = doc[0]
+                        file_path = doc[1]
+                        url = ''
+                        print(f"Reading document: {file_name}")
+                        if file_path.endswith('.txt'):
+                            documents.append(extract_text_from_txt(file_path))
+                        elif file_path.endswith('.docx'):
+                            documents.append(extract_text_from_docx(file_path))
+                        elif file_path.endswith('.pdf'):
+                            documents.append(extract_text_from_pdf(file_path))
+                        print('successfully read document')
+                        print(len(documents))
+                        print(len(documents[-1]))
+                        await db.update_metadata(user_id, file_name, len(encoding.encode(documents[-1])))
                     else:
-                        print(f'Processing {blob_name} with url {url}.')
-                        # create the loader
+                        user_id = container_name
+                        container_client = init_container_client(container_name)
+                        file_name = doc[0]
+                        url = doc[1]
+                        num_tokens = 0
+                        blob_client = container_client.get_blob_client(file_name)
+                        print(f"Reading document: {file_name}")
+                        if file_name.endswith('.docx'):
+                            print(f"Downloading document: {file_name}")
+                            logging.info(f"Downloading document: {file_name}")
+                            
+                            try:
+                                download_stream = blob_client.download_blob()
+                                with io.BytesIO() as output_stream:
+                                    download_stream.readinto(output_stream)
+                                    doc = docx.Document(output_stream)
+                                    documents = []
+                                    await websocket.send('2')
+                                    for para in doc.paragraphs:
+                                        num_tokens += len(encoding.encode(para.text))
+                                        documents.append(para)
+                            except Exception as e:
+                                print(f"Error downloading document: {e}")
+                                await websocket.send(f"error: {e}")
+                                return
+                        else:
+                            print(f'Processing {file_name} with url {url}.')
+                            # create the loader
 
-                        loader = AzStorageBlobReader(
-                            account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
-                            container_name = container_name,
-                            blob = blob_name,
-                            credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
-                        )
-                        # load in document
-                        await websocket.send('2')
-                        try:
-                            documents = loader.load_data()
-                            for document in documents:
-                                num_tokens += len(encoding.encode(document.text))
-                        except Exception as e:
-                            print(f"Error loading document: {e}")
-                            await websocket.send(f"error")
-                            return
-                    
-                    blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
+                            loader = AzStorageBlobReader(
+                                account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
+                                container_name = container_name,
+                                blob = file_name,
+                                credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
+                            )
+                            # load in document
+                            await websocket.send('2')
+                            try:
+                                documents = loader.load_data()
+                                for document in documents:
+                                    num_tokens += len(encoding.encode(document.text))
+                            except Exception as e:
+                                print(f"Error loading document: {e}")
+                                await websocket.send(f"error")
+                                return
+                        
+                        blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
 
                     await websocket.send('3')
                     if abort_flag:
@@ -1608,12 +1660,12 @@ async def process_documents():
 
 
                     # convert documents to the correct format for us
-                    docs, num_tokens = convert_doc(documents, blob_name, url)
+                    docs, num_tokens = convert_doc(documents, file_name, url, container_name == 'tmp')
                     if abort_flag:
                         return
                     
-                    # set the number of tokens as metadata for the blob
-                    blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
+                    # # set the number of tokens as metadata for the blob
+                    # blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
 
                     # define a node parser (specify chunk size and overalap)
                     node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -1626,7 +1678,7 @@ async def process_documents():
 
 
                     for node in nodes:
-                        node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
+                        node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', file_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
                         chunk_num = chunk_num + 1
 
                     # generate embeddings for each node
@@ -1704,13 +1756,12 @@ async def process_documents():
             except Exception as e:
                 print(f"Error adding documents: {e}")
                 await websocket.send(f"error: {e}")
-
                 return
     finally:
         await websocket.close()
 
 
-@bp.route("/upload_documents", methods=["POST"])
+@bp.route("/documents/upload", methods=["POST"])
 async def upload_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     storage_container_name = authenticated_user['user_principal_id']
@@ -1762,20 +1813,63 @@ async def upload_documents():
         print(f"Uploading Documents failed. Exception: {ex}")
         return jsonify({"error": f"Uploading Documents failed. Exception: {ex}"}, 500)
 
+@bp.route("/documents/save", methods=["POST"])
+async def save_documents():
+    authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+    user_id = authenticated_user['user_principal_id']
 
-@bp.route("/get_documents", methods=["GET"])
+    savedFiles = []
+    db = init_cosmosdb_document_metadata_client()
+    try:
+        files = await request.files
+        if 'file' not in files:
+            print("No files part in the request")
+            return jsonify({"error": "No files part in the request"}), 400
+        file_storage_list = files.getlist('file')
+
+        if not file_storage_list:
+            print("No files selected for uploading")
+            return jsonify({"error": "No files selected for uploading"}), 400
+        
+        for doc in file_storage_list:
+
+            file_name = doc.filename
+            #save the file to file
+            temp_dir = tempfile.gettempdir()
+            file_path = os.path.join(temp_dir, file_name)
+            
+            # Save the file to the temporary directory
+            await doc.save(file_path)
+            savedFiles.append((file_name,file_path))
+            print(f"Successfully saved {file_name} at location {file_path}.")
+            print('savedFiles:', savedFiles)
+
+            #check if the file is saved at the location
+        return jsonify({"Documents": savedFiles}, 200)
+    except Exception as ex:
+        print(f"Saving Documents failed. Exception: {ex}")
+        return jsonify({"error": f"Saving Documents failed. Exception: {ex}"}, 500)
+
+
+
+@bp.route("/documents/get", methods=["GET"])
 async def get_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
     container_client = init_container_client(user_id)
+    db = init_cosmosdb_document_metadata_client()
     try:
-        blob_list = container_client.list_blob_names()
-        filenames_with_counts = {} 
-        for blob in blob_list:
-            blob_client = container_client.get_blob_client(blob)
-            filenames_with_counts[blob] = blob_client.get_blob_properties().metadata['num_tokens']
-            print('Blob name: ' + blob + ' Number of tokens: ' + filenames_with_counts[blob])
+        filenames_with_counts = await db.get_metadata(user_id)
         print(f"Successfully retrieved documents: {filenames_with_counts}")
+        ### If storage is being used the data can be retrieved from the storage account ###
+        # blob_list = container_client.list_blob_names()
+        # filenames_with_counts = {} 
+        # for blob in blob_list:
+        #     blob_client = container_client.get_blob_client(blob)
+        #     filenames_with_counts[blob] = blob_client.get_blob_properties().metadata['num_tokens']
+        #     print('Blob name: ' + blob + ' Number of tokens: ' + filenames_with_counts[blob])
+        # print(f"Successfully retrieved documents: {filenames_with_counts}")
+        
 
         ### If storage is not being used the data can be retrieved from the search index ###
 
@@ -1801,33 +1895,46 @@ async def get_documents():
         print(f"Failed to get documents. Exception: {ex}")
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
 
-@bp.route("/delete_documents", methods=["POST"])
+@bp.route("/documents/delete", methods=["POST"])
 async def delete_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
-    container_client = init_container_client(authenticated_user['user_principal_id'])
+    # container_client = init_container_client(authenticated_user['user_principal_id'])
+    db = init_cosmosdb_document_metadata_client()
+
     request_json = await request.get_json()
     requested_blobs = request_json.get('filenames', [])
     try:
         search_client = init_search_client()
-        blob_list = container_client.list_blob_names()
-        for blob in requested_blobs:
-            print(f"Deleting {blob}")
+        # blob_list = container_client.list_blob_names()
 
+        for blob in requested_blobs:
+            
+            # Deleting from storage 
+            # try:
+            #     container_client.delete_blob(blob)
+            # except Exception as ex:
+            #     print(f"Failed to delete {blob} from storage. Exception: {ex}")
+
+            #Deleting from search index
             try:
-                container_client.delete_blob(blob)
-            except Exception as ex:
-                print(f"Failed to delete {blob} from storage. Exception: {ex}")
-            try:
-                results = search_client.search(search_text=blob, search_fields=["filename"])
-                for doc in results:
-                    print(doc['id'])
-                    if doc['filename'] == blob:
-                        search_client.delete_documents(documents=[{"id": doc['id']}])
-                        print(f"Deleted {doc['id']} from search index")
-                    else:
-                       Exception('Document not found in search index')
+                results = list(search_client.search(search_text=blob, search_fields=["filename"], filter=f"user_id eq '{authenticated_user['user_principal_id']}'"))
+                matching_docs = [doc['id'] for doc in results if doc['filename'] == blob]
+                print(f"Matching docs: {len(matching_docs)}")
+                if matching_docs:
+                    search_client.delete_documents(documents=[{"id": doc_id} for doc_id in matching_docs])
+                    print(f"Deleted {matching_docs} from search index")
+                else:
+                    raise Exception('Document not found in search index')
             except Exception as ex:
                 print(f"Failed to delete {blob} from search index. Exception: {ex}")
+
+            #Deleting from cosmosdb metadata
+            try:
+                await db.delete_metadata(authenticated_user['user_principal_id'], blob)
+                print(f"Deleted {blob} from metadata")
+            except Exception as ex:
+                print(f"Failed to delete {blob} from metadata. Exception: {ex}")
+
         return jsonify({"success": "All documents deleted"}), 200
     except Exception as ex:
         return jsonify({"error": f"Failed to delete documents. Exception: {ex}"}), 500

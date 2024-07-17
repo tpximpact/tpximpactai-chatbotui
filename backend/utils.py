@@ -1,8 +1,10 @@
 import os
 import json
 import logging
+from docx import Document
 import requests
 import dataclasses
+from pypdf import PdfReader
 
 DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
@@ -153,3 +155,36 @@ def format_stream_response(chatCompletionChunk, history_metadata, message_uuid=N
                     response_obj["choices"][0]["messages"].append(messageObj)
                     return response_obj
     return {}
+
+
+def extract_text_from_pdf(pdf_path):
+    text = ""
+    try:
+        reader = PdfReader(pdf_path)
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
+            text += page.extract_text()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return text
+
+
+def extract_text_from_txt(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            text = file.read()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        text = ""
+    return text
+
+def extract_text_from_docx(file_path):
+    try:
+        doc = Document(file_path)
+        text = []
+        for paragraph in doc.paragraphs:
+            text.append(paragraph.text)
+        return '\n'.join(text)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return ""
