@@ -199,3 +199,58 @@ class CosmosConversationClient():
 
         return messages
 
+    async def update_metadata(self, user_id, file_name, size):
+        # Fetch the existing metadata for the user
+        query = f"SELECT * FROM c WHERE c.id = '{user_id}'"
+        items = self.container_client.query_items(query=query)
+        items = [item async for item in items]
+
+        # Initialize the metadata
+        if items:
+            metadata = items[0]
+        else:
+            metadata = {'id': user_id, 'documents': {}}
+
+        # Update the documents dictionary
+        metadata['documents'][file_name] = {
+            'size': size,
+        }
+
+        # Upsert the updated metadata back into Cosmos DB
+        resp = await self.container_client.upsert_item(metadata)
+        return resp
+
+
+    async def get_metadata(self, user_id):
+        # Fetch the existing metadata for the user
+        query = f"SELECT * FROM c WHERE c.id = '{user_id}'"
+        items = self.container_client.query_items(query=query)
+        items = [item async for item in items]
+
+        # Initialize the metadata
+        if items:
+            metadata = items[0]['documents']
+        else:
+            metadata =  {}
+
+        return metadata
+    
+    async def delete_metadata(self, user_id, file_name):
+        # Fetch the existing metadata for the user
+        query = f"SELECT * FROM c WHERE c.id = '{user_id}'"
+        items = self.container_client.query_items(query=query)
+        items = [item async for item in items]
+
+        print('Deleting metadata for file:', file_name)
+        if items:
+            print('Metadata found')
+            metadata = items[0]
+            print('Metadata:', metadata) 
+            if file_name in metadata['documents']:
+                del metadata['documents'][file_name]
+                # Upsert the updated metadata back into Cosmos DB
+                print('Updated metadata:', metadata)
+                resp = await self.container_client.upsert_item(metadata)
+                return resp
+        else:
+            return False

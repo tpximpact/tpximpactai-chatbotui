@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
-import { createSearchIndex, deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
+import { createSearchIndex, deleteDocuments, getDocuments, getUserIdentity, getUserInfo, saveFiles, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton, Dialog, DialogType } from '@fluentui/react'
 import styles from './DocumentUpload.module.css'
@@ -107,7 +107,9 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         if (!user_id) {
             return;
         }
-        const ws = new WebSocket("/process_documents");
+        // If using storage, container name = ''
+        const containerName = 'tmp';
+        const ws = new WebSocket("/documents/process");
         setUploadWS(ws);
 
         ws.onmessage = (event) => {
@@ -116,6 +118,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 console.log('Error processing document:', event.data);
                 ws.close();
                 deleteDocuments(processing.map((doc) => doc[0]));
+                setUploading([]);
                 setErrorMsg({title: 'Error processing document', subtitle: 'Please refresh the page and try again.'});
                 toggleErrorDialog();
             } else if (event.data.startsWith('done:')) {
@@ -131,7 +134,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         ws.onopen = () => {
             const data = {
                 documents: processing,
-                container: user_id,
+                container: containerName,
+                user_id: user_id,
             };
             const jsonData = JSON.stringify(data);
             ws.send(jsonData);
@@ -167,7 +171,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 fileList.items.add(file);
             }
             setUploading(fileNames);
-            const res = await uploadFiles(fileList.files);
+            // const res = await uploadFiles(fileList.files);
+            const res = await saveFiles(fileList.files);
             if (res.status === 200) {
                 const resJson = await res.json();
                 initiateWebSocket(resJson[0]['Documents']);                
