@@ -86,31 +86,6 @@ def generateSimpleFilterString(user_id, filenames):
     
     return combined_filter
 
-# def escape_odata_filter(filter_string):
-#     """
-#     Escapes or encodes special characters in an OData filter string to make it valid.
-    
-#     :param filter_string: The raw filter string to be corrected.
-#     :return: The corrected filter string.
-#     """
-#     # Define the characters that need special handling
-#     special_chars = {
-#         "'": "''",         # Single quote (apostrophe) should be doubled
-#         # "\\": "\\\\",      # Backslash should be doubled
-#         # "%": "%25",        # Percent sign should be percent-encoded
-#         # "&": "%26",        # Ampersand should be percent-encoded
-#         # " ": "%20",        # Space should be percent-encoded
-#         # "/": "%2F",        # Forward slash should be percent-encoded
-#         # "?": "%3F",        # Question mark should be percent-encoded
-#         # "=": "%3D"         # Equal sign should be percent-encoded
-#     }
-    
-#     # Escape each special character in the filter string
-#     for char, escaped_char in special_chars.items():
-#         filter_string = filter_string.replace(char, escaped_char)
-    
-#     return filter_string
-
 
 
 def format_non_streaming_response(chatCompletion, history_metadata, message_uuid=None):
