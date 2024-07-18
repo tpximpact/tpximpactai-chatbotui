@@ -31,7 +31,7 @@ jobs:
       with:
         push: true
         tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_df5eda278b3c4765a8a12595de4569a8 }}/tpxwebappcontainerdev:${{ github.sha }}
-        file: ./Dockerfile
+        file: ./WebApp.Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
