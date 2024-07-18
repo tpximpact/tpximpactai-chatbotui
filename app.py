@@ -315,7 +315,7 @@ def init_openai_client(use_data=SHOULD_USE_DATA):
             default_headers=default_headers,
             azure_endpoint=endpoint
         )
-            
+
         return azure_openai_client
     except Exception as e:
         logging.exception("Exception in Azure OpenAI initialization", e)
@@ -1197,7 +1197,7 @@ def chunkString(text, chunk_size,overlap):
 
     return chunked_content_list
 
-async def collect_documents(filenames, container_name):
+async def collect_documents_from_storage(filenames, container_name):
     try:
         container_client = init_container_client(container_name)
     except Exception as e:
@@ -1490,7 +1490,7 @@ async def process_documents():
     encoding = tiktoken.get_encoding("cl100k_base")
     # adds documents to the Azure Cognitive Search index
     # and gives progress updates over a websocket
-    def convert_doc(documents, blob_name, url, isString=False):
+    def convert_doc(documents, file_name, url, isString=False):
         print('CONVERTINNGGGGGGGGGG')
         print('Converting documents, there are ', len(documents), ' documents in this collection.')
         docs = []
@@ -1517,7 +1517,7 @@ async def process_documents():
         docs.append(Document(
 
             # make sure ID of the document is the pdf name without extension
-            id_ = re.sub(r'[^\w&=.-]', '_', blob_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
+            id_ = re.sub(r'[^\w&=.-]', '_', file_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
 
             # join the text of the PDF into a single string
             text = ' '.join(full_text),
@@ -1527,7 +1527,7 @@ async def process_documents():
                 #'title': blob_name.replace('.pdf','').replace('.PDF',''),
                 'user_id': user_id,
                 'doc_url': url,
-                'filename': blob_name,
+                'filename': file_name,
             },
             # don't use the fields added as metadtata in the embedding/llm processes
             excluded_embed_metadata_keys = doc_url_list,

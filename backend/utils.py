@@ -74,13 +74,42 @@ def generateFilterString(userToken):
 def generateSimpleFilterString(user_id, filenames):
         # Construct filter string
     user_filter = f"user_id eq '{user_id}'"
-    filename_filters = [f"filename eq '{filename}'" for filename in filenames]
-    filename_filter = " or ".join(filename_filters)
+    filename_filters = []
+    for filename in filenames:
+        escaped_filename = filename.replace("'", "''")
+        filter_part = f"filename eq '{escaped_filename}'"
+        filename_filters.append(filter_part)
+        filename_filter = " or ".join(filename_filters)
     
     # Combine user_id filter and filename filters
     combined_filter = f"({user_filter}) and ({filename_filter})"
     
     return combined_filter
+
+# def escape_odata_filter(filter_string):
+#     """
+#     Escapes or encodes special characters in an OData filter string to make it valid.
+    
+#     :param filter_string: The raw filter string to be corrected.
+#     :return: The corrected filter string.
+#     """
+#     # Define the characters that need special handling
+#     special_chars = {
+#         "'": "''",         # Single quote (apostrophe) should be doubled
+#         # "\\": "\\\\",      # Backslash should be doubled
+#         # "%": "%25",        # Percent sign should be percent-encoded
+#         # "&": "%26",        # Ampersand should be percent-encoded
+#         # " ": "%20",        # Space should be percent-encoded
+#         # "/": "%2F",        # Forward slash should be percent-encoded
+#         # "?": "%3F",        # Question mark should be percent-encoded
+#         # "=": "%3D"         # Equal sign should be percent-encoded
+#     }
+    
+#     # Escape each special character in the filter string
+#     for char, escaped_char in special_chars.items():
+#         filter_string = filter_string.replace(char, escaped_char)
+    
+#     return filter_string
 
 
 
@@ -188,3 +217,5 @@ def extract_text_from_docx(file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return ""
+    
+
