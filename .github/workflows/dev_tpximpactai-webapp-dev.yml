@@ -30,7 +30,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_33d42e961bc549c59fa5bdb37c5484fc }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}
+        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_33d42e961bc549c59fa5bdb37c5484fc }}/tpxwebappcontainerdev:${{ github.sha }}
         file: ./WebApp.Dockerfile
 
   deploy:
@@ -48,4 +48,4 @@ jobs:
         app-name: 'tpximpactai-webapp-dev'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_8a4cc040ee9940428119dee895d38f86 }}
-        images: 'tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_33d42e961bc549c59fa5bdb37c5484fc }}/tpximpactaicontainerreg/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}'
+        images: 'tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_33d42e961bc549c59fa5bdb37c5484fc }}/tpxwebappcontainerdev:${{ github.sha }}'
