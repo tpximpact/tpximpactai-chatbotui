@@ -1,6 +1,11 @@
 # [Preview] Sample Chat App with AOAI
 
 This repo contains sample code for a simple chat webapp that integrates with Azure OpenAI. Note: some portions of the app use preview APIs.
+## System Prerequisites
+- Python 3.11
+- NodeJS 21.7.3
+- powershell.exe -executionpolicy unrestricted
+- Run with quart! amend start.cmd line 37 - call python -m quart run --port=50505 --host=127.0.0.1 --reload
 
 ## Prerequisites
 - An existing Azure OpenAI resource and model deployment of a chat model (e.g. `gpt-35-turbo-16k`, `gpt-4`)
