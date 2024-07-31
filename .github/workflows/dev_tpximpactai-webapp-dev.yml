@@ -31,7 +31,7 @@ jobs:
       with:
         push: true
         tags: sharedimpactaiacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_ac71f9cf8b5347fb974f2000a2b3f5db }}/impactaidev:${{ github.sha }}
-        file: ./Dockerfile
+        file: ./WebApp.Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
