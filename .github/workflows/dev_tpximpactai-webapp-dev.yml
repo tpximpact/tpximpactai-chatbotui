@@ -10,8 +10,8 @@ jobs:
     runs-on: "ubuntu-latest"
 
     env:
-      REGISTRY: tpximpactaicontainerreg.azurecr.io
-      IMAGE_NAME: tpxwebappcontainerdev
+      REGISTRY: sharedimpactaiacr.azurecr.io
+      IMAGE_NAME: impactaidev/tpxwebappcontainerdev
       AZURE_WEBAPP_NAME: tpximpactai-webapp-dev
 
     steps:
@@ -33,6 +33,11 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           file: ./WebApp.Dockerfile
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
