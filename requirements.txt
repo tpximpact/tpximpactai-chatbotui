@@ -13,7 +13,7 @@ azure-monitor-opentelemetry==1.4.1
 azure-monitor-events-extension==0.1.0
 langchain==0.0.340
 tiktoken==0.4.0
-llama-index==0.12.10
+llama-index
 llama-index-vector-stores-azureaisearch
 llama-index-embeddings-azure-openai
 llama-index-readers-azstorage-blob
