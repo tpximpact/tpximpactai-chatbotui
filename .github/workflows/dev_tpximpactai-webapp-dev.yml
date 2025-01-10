@@ -10,8 +10,8 @@ jobs:
     runs-on: "ubuntu-latest"
 
     env:
-      REGISTRY: sharedimpactaiacr.azurecr.io
-      IMAGE_NAME: impactaidev/tpxwebappcontainerdev
+      REGISTRY: tpximpactaicontainerreg.azurecr.io
+      IMAGE_NAME: sharedimpactaiacr/impactaidev
       AZURE_WEBAPP_NAME: tpximpactai-webapp-dev
 
     steps:
