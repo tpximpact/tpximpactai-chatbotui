@@ -30,22 +30,5 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_30d95bc31d7a4f7b94356110c32d0cf9 }}/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}
+        tags: tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_30d95bc31d7a4f7b94356110c32d0cf9 }}/tpximpactaicontainerreg/tpxwebappcontainerdev:latest
         file: ./WebApp.Dockerfile
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-    - name: Deploy to Azure Web App
-      id: deploy-to-webapp
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'tpximpactai-webapp-dev'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_ff0dade4e2df43cd947020006b7dff64 }}
-        images: 'tpximpactaicontainerreg.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_30d95bc31d7a4f7b94356110c32d0cf9 }}/tpximpactaicontainerreg/tpxwebappcontainerdev:${{ github.sha }}'
