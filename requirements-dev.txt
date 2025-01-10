@@ -13,4 +13,3 @@ azure-storage-blob
 chardet
 azure-monitor-opentelemetry
 azure-monitor-events-extension
-punkt
