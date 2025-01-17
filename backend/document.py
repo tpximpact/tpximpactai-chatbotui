@@ -17,6 +17,8 @@ from azure.search.documents.indexes.models import *
 from langchain.schema import Document
 
 from backend.setup import AZURE_OPENAI_MODEL, AZURE_OPENAI_SYSTEM_MESSAGE, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY, get_doc_from_azure_blob_storage, init_container_client, init_openai_client, init_search_client, init_vector_store
+from werkzeug.utils import secure_filename
+
 
 def chunkString(text, chunk_size,overlap):
     SENTENCE_ENDINGS = [".", "!", "?"]
@@ -172,239 +174,6 @@ async def documentsummary():
         return jsonify({"error": f"Error reading document: {e}"}), 500
 
 
-# def convert_doc(documents, blob_name, url, container_name, encoding):
-
-#     print('Converting documents, there are ', len(documents), ' documents in this collection.')
-#     docs = []
-#     full_text = []
-#     num_tokens = 0
-#     doc_url_list = ['doc_url', 'user_id']
-    
-#     # for every page in the document
-#     for document in documents:
-#         # count the number of tokens in the document as this is the only time we're looking at the raw document text all in one place
-#         num_tokens += len(encoding.encode(document.text))
-
-#         document.text = document.text.replace("\n",".  ").replace('..', '.')
-#         document.text = re.sub(r"\s+", " ", document.text)
-#         # extract and merge the text from individual pages
-#         full_text.append(document.text)
-
-#     # create a new Document with metadata fields and all text in one Document
-#     docs.append(Document(
-
-#         # make sure ID of the document is the pdf name without extension
-#         id_ = re.sub(r'[^\w&=.-]', '_', blob_name).strip('_').replace(' ', '_').replace('.pdf','').replace('.PDF',''),
-
-#         # join the text of the PDF into a single string
-#         text = ' '.join(full_text),
-
-#         # add metadata fields
-#         metadata = {
-#             #'title': blob_name.replace('.pdf','').replace('.PDF',''),
-#             'user_id': container_name,
-#             'doc_url': url,
-#             'filename': blob_name,
-#         },
-#         # don't use the fields added as metadtata in the embedding/llm processes
-#         excluded_embed_metadata_keys = doc_url_list,
-#         excluded_llm_metadata_keys = doc_url_list
-#     ))
-    
-#     return docs, num_tokens
-
-# async def handle_document_processing(websocket, data):
-#     encoding = tiktoken.get_encoding("cl100k_base")
-#     abort_flag = False
-
-#     async def listen_for_abort():
-#         nonlocal abort_flag
-#         while not abort_flag:
-#             data = await websocket.receive()
-#             data = json.loads(data)
-#             if data.get('command') == 'abort':
-#                 print("ABORT RCVD")
-#                 abort_flag = True
-
-#     asyncio.create_task(listen_for_abort())
-
-#     list_of_lists = data['documents']
-#     container_name = data['container']
-#     document_tuples = [tuple(item) for item in list_of_lists]
-    
-#     chunk_size = 1000
-#     chunk_overlap = 100
-
-#     # Initialize clients and models
-#     search_client = init_search_client()
-#     container_client = init_container_client(container_name)
-#     llm = AzureOpenAI(
-#         model=AZURE_OPENAI_MODEL_NAME,
-#         deployment_name=AZURE_OPENAI_MODEL,
-#         api_key=AZURE_OPENAI_KEY,
-#         azure_endpoint=AZURE_OPENAI_ENDPOINT,
-#         api_version=AZURE_OPENAI_PREVIEW_API_VERSION,
-#     )
-#     embed_model = AzureOpenAIEmbedding(
-#         model=AZURE_OPENAI_EMBEDDING_MODEL_NAME,
-#         deployment_name=AZURE_OPENAI_EMBEDDING_NAME,
-#         api_key=AZURE_OPENAI_KEY,
-#         azure_endpoint=AZURE_OPENAI_ENDPOINT,
-#         api_version=AZURE_OPENAI_PREVIEW_API_VERSION,
-#     )
-#     Settings.llm = llm
-#     Settings.embed_model = embed_model
-
-#     final_nodes = []
-
-#     # Process each document
-#     for doc in document_tuples:
-#         if abort_flag:
-#             return
-#         num_tokens = 0
-#         blob_name, url = doc
-#         blob_client = container_client.get_blob_client(blob_name)
-        
-#         # Handle document loading
-#         if blob_name.endswith('.docx'):
-#             print(f"Downloading document in handle_document_processing: {blob_name}")
-#             logging.info(f"Downloading document in handle_document_processing: {blob_name}")
-            
-#             try:
-#                 download_stream = blob_client.download_blob()
-#                 with io.BytesIO() as output_stream:
-#                     download_stream.readinto(output_stream)
-#                     doc = docx.Document(output_stream)
-#                     documents = []
-#                     await websocket.send('2')
-#                     for para in doc.paragraphs:
-#                         num_tokens += len(encoding.encode(para.text))
-#                         documents.append(para)
-#             except Exception as e:
-#                 print(f"Error downloading document in handle_document_processing: {e}")
-#                 await websocket.send(f"error: {e}")
-#                 return
-#         else:
-#             print(f'Processing {blob_name} with url {url}.')
-#             # create the loader
-
-#             loader = AzStorageBlobReader(
-#                 account_url = f'https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net',
-#                 container_name = container_name,
-#                 blob = blob_name,
-#                 credential = AZURE_STORAGE_KEY # replace this with DefaultAzureCredential() once MI is set up
-#             )
-#             # load in document
-#             await websocket.send('2')
-#             try:
-#                 documents = loader.load_data()
-#                 for document in documents:
-#                     num_tokens += len(encoding.encode(document.text))
-#             except Exception as e:
-#                 print(f"Error loading document: {e}")
-#                 await websocket.send(f"error")
-#                 return
-        
-#         await websocket.send('3')
-#         if abort_flag:
-#             return
-
-
-#         # convert documents to the correct format for us
-#         docs, num_tokens = convert_doc(documents, blob_name, url, container_name, encoding)
-#         if abort_flag:
-#             return
-        
-#         # set the number of tokens as metadata for the blob
-#         blob_client.set_blob_metadata(metadata={'num_tokens': str(num_tokens)})
-
-#         # define a node parser (specify chunk size and overalap)
-#         node_parser = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-
-#         # split the documents into nodes (aka chunks)
-#         nodes = node_parser.get_nodes_from_documents(docs, show_progress=False)
-
-#         # change the node ID to document name + chunk/node number
-#         chunk_num = 1
-
-
-#         for node in nodes:
-#             node.id_ = re.sub(r'[^a-zA-Z0-9_]', '_', blob_name).strip('_').replace(' ', '_').replace('_pdf','').replace('_PDF','').replace('___', '_') + str(chunk_num)
-#             chunk_num = chunk_num + 1
-
-#         # generate embeddings for each node
-#         progress = 4
-#         if len(nodes) > 50:
-#             interval = math.floor(len(nodes)/5)
-#         else: 
-#             interval = len(nodes)
-#             progress = 9
-#         for index, node in enumerate(nodes):
-#             if index % interval == 0:
-#                 if abort_flag:
-#                     return
-#                 await websocket.send(f"{progress}")
-#                 progress = progress + 1
-#             node_embedding = embed_model.get_text_embedding(
-#                 node.get_content(metadata_mode="all")
-#             )
-#             node.embedding = node_embedding
-#         if abort_flag:
-#             return
-
-#         # add all the nodes to a final list that will be added to the search index
-#         final_nodes.append(nodes)
-
-#     # flatten the list of nodes
-#     flat_nodes_list = [item for node in final_nodes for item in node]
-
-#     # define additional fields to be added to the search index 
-#     # (needs to match the fields added in CreateSearchIndex)
-#     metadata_fields = {
-#         'user_id': 'user_id',
-#         'doc_url': 'doc_url',
-#         'filename': 'filename'
-#     }
-
-
-#     # define the vector store we will be connecting to 
-#     # (needs to match the fields added in CreateSearchIndex)
-#     vector_store = AzureAISearchVectorStore(
-#         search_or_index_client=search_client,
-#         filterable_metadata_field_keys=metadata_fields,
-#         index_management=IndexManagement.VALIDATE_INDEX,
-#         id_field_key="id",
-#         chunk_field_key="content",
-#         embedding_field_key="content_vector",
-#         embedding_dimensionality=1536,
-#         metadata_string_field_key="llamaindex_metadata",
-#         doc_id_field_key="llamaindex_doc_id"
-#     )
-
-#     # set the storage context
-#     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-    
-#     # load the index
-#     index = VectorStoreIndex.from_documents(
-#         [],
-#         storage_context=storage_context,
-#     )
-
-#     if abort_flag:
-#         return
-
-#     # add the nodes to the vector store/search index
-#     index.insert_nodes(flat_nodes_list)
-
-#     # get the ID-s of the documents added to the search index
-#     node_ids = ', '.join([node.id_ for node in flat_nodes_list])
-
-#     print(f"Documents added to the search index. Document IDs: {node_ids}")
-#     if abort_flag:
-#         return
-#     await websocket.send(f"done: Document IDs added to the search index: {node_ids}")
-
 async def handle_new_document(websocket, data):
     encoding = tiktoken.get_encoding("cl100k_base")
     abort_flag = False
@@ -486,16 +255,28 @@ async def upload_documents():
         
         for doc in file_storage_list:
 
-            file_name = doc.filename
+            # Sanitize and validate filename
+            original_filename = doc.filename
+            sanitized_filename = secure_filename(original_filename)
+            
+            # Additional validation
+            if not sanitized_filename or '..' in sanitized_filename or '/' in sanitized_filename or '\\' in sanitized_filename:
+                return jsonify({"error": f"Invalid filename: {original_filename}"}), 400
+                
+            # Validate file extension
+            allowed_extensions = {'.pdf', '.docx', '.txt'}  # Add your allowed extensions
+            if not any(sanitized_filename.lower().endswith(ext) for ext in allowed_extensions):
+                return jsonify({"error": f"Unsupported file type: {original_filename}"}), 400
+            
             storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
 
             blob_service_client = BlobServiceClient(
                 account_url=storage_account_url, 
                 credential=AZURE_STORAGE_KEY
             )
-            print('Got blob service client')
+
             container_client = blob_service_client.get_container_client(storage_container_name)
-            print('Got container client')
+            
             try:
                 container_client.create_container()
                 print(f"Container '{storage_container_name}' created.")
@@ -508,13 +289,13 @@ async def upload_documents():
             print('Container created')
             blob_client = blob_service_client.get_blob_client(
                 container=storage_container_name,
-                blob=file_name
+                blob=sanitized_filename
             )
             print('Getting blob client')
             blob_client.upload_blob(doc.stream, overwrite=True)
             print('Uploading blob')
-            uploadedFiles.append((file_name, blob_client.url))
-            print(f"Successfully uploaded {file_name} at location {blob_client.url}.")
+            uploadedFiles.append((sanitized_filename, blob_client.url))
+            print(f"Successfully uploaded {sanitized_filename} at location {blob_client.url}.")
         return jsonify({"Documents": uploadedFiles}, 200)
     except Exception as ex:
         print(f"Uploading Documents failed. Exception: {ex}")

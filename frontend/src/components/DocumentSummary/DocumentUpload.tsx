@@ -177,6 +177,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             }
         } catch (error) {
             console.error('Error uploading files:', error);
+            setErrorMsg({title: 'Error uploading files', subtitle: "Try taking any special characters out of your filename. Please refresh the page and try again later."});
+            toggleErrorDialog();
             deleteDocuments(fileNames);
         } finally {
         }

@@ -1,8 +1,10 @@
 import copy
 import json
 import os
+import random
 import re
 import logging
+import shutil
 import tempfile
 from typing import List
 from dotenv import load_dotenv
@@ -815,7 +817,8 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
             credential=AZURE_STORAGE_KEY
         )
         with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = f"{temp_dir}/{storage_account_container}/{blob_name}"
+            rand_int = random.randint(0, 1000000)
+            file_path = f"{temp_dir}/{rand_int}/{storage_account_container}/{blob_name}"
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "wb") as file:
                 blob_data = blob_client.download_blob()
@@ -832,6 +835,7 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 raise ValueError(f"Unsupported file type: {blob_name}")
             
             docs = loader.load()
+            shutil.rmtree(f"{temp_dir}/{rand_int}")
             return docs
     except Exception as ex:
         print(f'ERROR DOWNLOADING FILE FROM AZURE BLOB STORAGE: {ex}')

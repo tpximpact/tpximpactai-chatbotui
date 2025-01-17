@@ -23,6 +23,20 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
+    @app.after_request
+    def add_security_headers(response):
+        # Prevent clickjacking attacks
+        response.headers['X-Frame-Options'] = 'DENY'
+        # Prevent MIME-type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        # Control referrer information
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Enable HSTS (force HTTPS)
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+        # Permissions policy
+        response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
+        return response
+
     return app
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
