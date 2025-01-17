@@ -412,25 +412,6 @@ export const historyMessageFeedback = async (messageId: string, feedback: string
 }
 
 
-export const createSearchIndex = async (): Promise<Response> => {
-    const response = await fetch("/create_search_index", {
-        method: "POST",
-    })
-    .then((res) => {
-        return res
-    })
-    .catch((err) => {
-        console.error("There was an issue creating the search index.");
-        let errRes: Response = {
-            ...new Response,
-            ok: false,
-            status: 500,
-        }
-        return errRes;
-    })
-    return response;
-}
-
 export const uploadFiles = async (files: FileList): Promise<Response> => {
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {

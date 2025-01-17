@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
-import { createSearchIndex, deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
+import { deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton, Dialog, DialogType } from '@fluentui/react'
 import styles from './DocumentUpload.module.css'
@@ -75,7 +75,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     }
 
     useEffect(() => {
-        createSearchIndex()
         getDocuments().then((res) => {
             if (res) {
                 if (res.status === 200) {
