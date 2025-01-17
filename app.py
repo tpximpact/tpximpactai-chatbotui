@@ -21,7 +21,6 @@ load_dotenv(override=True)
 
 def create_app():
     app = Quart(__name__)
-    app.config["PROVIDE_AUTOMATIC_OPTIONS"] = True
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
     return app
