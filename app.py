@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from dotenv import load_dotenv
 
 from quart import (
@@ -17,25 +18,32 @@ from backend.conversation import clear_messages, conversation_internal, delete_a
 from backend.document import delete_documents, documentsummary, get_documents, handle_document_refinement, handle_new_document, ingest_all_docs_from_storage, upload_documents
 from backend.setup import UI_FAVICON, UI_TITLE, ensure_cosmos, frontend_settings
 
-load_dotenv(override=True)
+
+LOCAL_DEV = os.getenv("LOCAL_DEV", "false")
+if LOCAL_DEV == 'true':
+    load_dotenv(override=True)
 
 def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
-    @app.after_request
-    def add_security_headers(response):
-        # Prevent clickjacking attacks
-        response.headers['X-Frame-Options'] = 'DENY'
-        # Prevent MIME-type sniffing
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        # Control referrer information
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        # Enable HSTS (force HTTPS)
-        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
-        # Permissions policy
-        response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
-        return response
+
+
+    # @app.after_request
+    # def add_security_headers(response):
+
+    #     if LOCAL_DEV == 'false':
+    #         # Prevent clickjacking attacks
+    #         response.headers['X-Frame-Options'] = 'DENY'
+    #         # Prevent MIME-type sniffing
+    #         response.headers['X-Content-Type-Options'] = 'nosniff'
+    #         # Control referrer information
+    #         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    #         # Enable HSTS (force HTTPS)
+    #         response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+    #         # Permissions policy
+    #         response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
+    #     return response
 
     return app
 
@@ -157,9 +165,5 @@ async def delete_documents_route():
 async def get_user_id():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     return jsonify(authenticated_user['user_principal_id']), 200
-
-@bp.route("/ingest_all", methods=["GET"])
-async def ingest_all():
-    return await ingest_all_docs_from_storage()
 
 app = create_app()

@@ -13,6 +13,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from azure.storage.blob import BlobServiceClient
 from azure.search.documents.indexes.models import *
+from azure.core.credentials import AzureNamedKey
+from azure.core.credentials import AzureNamedKeyCredential
+
 
 from langchain.schema import Document
 
@@ -405,11 +408,18 @@ def join_and_split_docs(docs):
     return split_docs
 
 
-def ingest_all_docs_from_storage():
-    all_containers = BlobServiceClient(account_url=AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_KEY).list_containers()
+async def ingest_all_docs_from_storage():
+    storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
+
+    blob_service_client = BlobServiceClient(
+    account_url=storage_account_url, 
+    credential=AZURE_STORAGE_KEY
+    )
+
+    all_containers = blob_service_client.list_containers()
     for container in all_containers:
-        container_client = BlobServiceClient(account_url=AZURE_STORAGE_ACCOUNT, credential=AZURE_STORAGE_KEY).get_container_client(container.name)
-        blob_list = container_client.list_blob_names()
+        container_client = blob_service_client.get_container_client(container.name)
+        blob_list = container_client.list_blob_names()        
         for blob in blob_list:
             docs = get_doc_from_azure_blob_storage(blob, container.name)
             joined_docs = join_and_split_docs(docs)
@@ -417,3 +427,4 @@ def ingest_all_docs_from_storage():
             init_vector_store().add_texts(texts, metadatas)
             print(f"Ingested {blob} from {container.name}")
     print(f"Ingested all documents from storage")
+    return jsonify({"success": "All documents ingested"}), 200
