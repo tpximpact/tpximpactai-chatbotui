@@ -1,12 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {DropEvent, FileRejection, useDropzone} from 'react-dropzone'
 import COLOURS from '../../constants/COLOURS'
 import Loading from '../Loading'
-import { deleteDocuments, getDocuments, getUserIdentity, getUserInfo, uploadFiles } from '../../api'
+import { deleteDocuments, getDocuments, getUserIdentity, uploadFiles } from '../../api'
 import FileIcon from './FileIcon'
 import { CommandBarButton, Dialog, DialogType } from '@fluentui/react'
 import styles from './DocumentUpload.module.css'
-import { set } from 'lodash'
 import { useBoolean } from '@fluentui/react-hooks'
 
 const baseStyle = {
@@ -177,7 +176,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             }
         } catch (error) {
             console.error('Error uploading files:', error);
-            setErrorMsg({title: 'Error uploading files', subtitle: "Try taking any special characters out of your filename. Please refresh the page and try again later."});
+            setErrorMsg({title: 'Error uploading files', subtitle: "Try taking any special characters out of your filename. Please refresh the page and try again later. (Only .pdf, .docx, .txt files are supported)"});
             toggleErrorDialog();
             deleteDocuments(fileNames);
         } finally {
@@ -243,6 +242,15 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         isDragActive,
     } = useDropzone({
         onDrop,
+        onDropRejected: (fileRejections) => {
+            const errorMessage = fileRejections[0]?.errors[0]?.message || 'Invalid file type';
+            console.log("errorMessage", errorMessage)
+            setErrorMsg({
+                title: 'Invalid file type', 
+                subtitle: 'Only .pdf, .docx, and .txt files are supported.'
+            });
+            toggleErrorDialog();
+        },
         accept: {
             'text/plain': ['.txt'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
@@ -253,9 +261,9 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         
     });
           
-
+    console.log("documents.length", documents.length)
     const style = useMemo(() => ({
-        borderStyle: documents.length > 0 ? 'none' : 'dashed',
+        // borderStyle: documents.length > 0 ? 'none' : 'dashed',
         backgroundColor: documents.length > 0 ? '#F9F9F9' : 'white',
         ...baseStyle,
         ...(isFocused ? focusedStyle : {}),

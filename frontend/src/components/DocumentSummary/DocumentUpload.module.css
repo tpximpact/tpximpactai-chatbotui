@@ -35,6 +35,8 @@
     width: 100%;
     align-items: center;
     display: flex;
+    border: 1px dashed green;
+    border-radius: 50px;
   }
   
   .dragZoneText {
@@ -64,6 +66,8 @@
     align-items: center;
     display: flex;
     padding: 60px 30px;
+    border: 1px dashed black;
+    border-radius: 50px;
   }
   
   .dropzoneText {

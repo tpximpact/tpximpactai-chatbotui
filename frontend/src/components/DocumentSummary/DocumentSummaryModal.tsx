@@ -176,7 +176,18 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
 
     return (
         <Modal
-        styles= {{ root: {overflowY: 'hidden', borderWidth: '1px', borderColor:'black',}, main: {borderRadius:'30px', width: '55%',overflowY: 'hidden'} } }
+        styles={{
+            root: {
+                overflowY: 'hidden',
+                borderWidth: '1px',
+                borderColor: 'black',
+            },
+            main: {
+                borderRadius: '30px',
+                width: '55%',
+                overflowY: 'hidden',
+            }
+        }}
             isOpen={isOpen}
             onDismiss={onClose}
             isBlocking={false}
