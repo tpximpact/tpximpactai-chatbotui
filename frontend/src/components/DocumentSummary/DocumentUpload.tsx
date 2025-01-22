@@ -113,7 +113,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             if (event.data.startsWith('error:')) {
                 console.log('Error processing document:', event.data);
                 ws.close();
-                // deleteDocuments(processing.map((doc) => doc[0]));
+                deleteDocuments(processing.map((doc) => doc[0]));
                 setUploading([]);
                 setErrorMsg({title: 'Error processing document', subtitle: 'Please refresh the page and try again.'});
                 toggleErrorDialog();

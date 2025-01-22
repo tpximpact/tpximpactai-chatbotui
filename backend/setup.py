@@ -850,4 +850,4 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 
     except Exception as ex:
         print(f'ERROR DOWNLOADING FILE FROM AZURE BLOB STORAGE: {ex}')
-        return None
+        return 'error: ' + str(ex)

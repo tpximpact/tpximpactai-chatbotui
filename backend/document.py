@@ -204,8 +204,8 @@ async def handle_new_document(websocket, data):
         blob_name, url = doc
 
         documents = get_doc_from_azure_blob_storage(blob_name, container_name)
-        if not documents:
-            raise Exception('Error getting document from Azure Blob Storage')
+        if documents.startswith('error:'):
+            raise Exception(documents)
         await websocket.send('3')
         if abort_flag:
             return
