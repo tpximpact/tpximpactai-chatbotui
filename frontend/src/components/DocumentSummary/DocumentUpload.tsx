@@ -114,6 +114,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 console.log('Error processing document:', event.data);
                 ws.close();
                 deleteDocuments(processing.map((doc) => doc[0]));
+                setUploading([]);
                 setErrorMsg({title: 'Error processing document', subtitle: 'Please refresh the page and try again.'});
                 toggleErrorDialog();
             } else if (event.data.startsWith('done:')) {
@@ -165,6 +166,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 }
                 fileList.items.add(file);
             }
+            console.log("about to upload files")
             setUploading(fileNames);
             const res = await uploadFiles(fileList.files);
             if (res.status === 200) {
@@ -172,7 +174,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 initiateWebSocket(resJson[0]['Documents']);                
                 setProgress(1/9)
             } else {
-                deleteDocuments(fileNames);
+                throw new Error('Error uploading files');
             }
         } catch (error) {
             console.error('Error uploading files:', error);

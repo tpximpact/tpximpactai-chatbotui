@@ -204,6 +204,8 @@ async def handle_new_document(websocket, data):
         blob_name, url = doc
 
         documents = get_doc_from_azure_blob_storage(blob_name, container_name)
+        if not documents:
+            raise Exception('Error getting document from Azure Blob Storage')
         await websocket.send('3')
         if abort_flag:
             return
@@ -258,16 +260,13 @@ async def upload_documents():
         
         for doc in file_storage_list:
 
-            # Sanitize and validate filename
             original_filename = doc.filename
             sanitized_filename = secure_filename(original_filename)
             
-            # Additional validation
             if not sanitized_filename or '..' in sanitized_filename or '/' in sanitized_filename or '\\' in sanitized_filename:
                 return jsonify({"error": f"Invalid filename: {original_filename}"}), 400
                 
-            # Validate file extension
-            allowed_extensions = {'.pdf', '.docx', '.txt'}  # Add your allowed extensions
+            allowed_extensions = {'.pdf', '.docx', '.txt'} 
             if not any(sanitized_filename.lower().endswith(ext) for ext in allowed_extensions):
                 return jsonify({"error": f"Unsupported file type: {original_filename}"}), 400
             

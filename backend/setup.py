@@ -816,21 +816,22 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
             blob_name=blob_name,
             credential=AZURE_STORAGE_KEY
         )
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Truncate the original blob name if needed, keeping the extension
-            name, ext = os.path.splitext(blob_name)
-            if len(name) > 50:  # arbitrary reasonable length
-                name = name[:47] + "..."  # 47 + 3 dots = 50
-            safe_blob_name = name + ext
+        
+        # Truncate the original blob name if needed, keeping the extension
+        name, ext = os.path.splitext(blob_name)
+        if len(name) > 50:  # arbitrary reasonable length
+            name = name[:47] + "..."  # 47 + 3 dots = 50
+        safe_blob_name = name + ext
 
-            rand_int = random.randint(0, 1000000)
-            file_path = os.path.join(temp_dir, f"{storage_account_container[:10]}-{rand_int}-{safe_blob_name}")
-            
-            with open(file_path, "wb") as file:
-                blob_data = blob_client.download_blob()
-                blob_data.readinto(file)
-            
-            # Determine file type and use appropriate loader
+        rand_int = random.randint(0, 1000000)
+        temp_dir = tempfile.gettempdir()
+        file_path = os.path.join(temp_dir, f"{storage_account_container[:10]}-{rand_int}-{safe_blob_name}")
+        
+        with open(file_path, "wb") as file:
+            blob_data = blob_client.download_blob()
+            blob_data.readinto(file)
+        
+        try:
             if blob_name.lower().endswith('.pdf'):
                 loader = PyPDFLoader(file_path)
             elif blob_name.lower().endswith('.txt'):
@@ -842,6 +843,11 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
             
             docs = loader.load()
             return docs
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                
     except Exception as ex:
         print(f'ERROR DOWNLOADING FILE FROM AZURE BLOB STORAGE: {ex}')
-        return None
+        return 'error: ' + str(ex)
