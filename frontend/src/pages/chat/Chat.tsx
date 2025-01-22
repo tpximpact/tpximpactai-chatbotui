@@ -705,8 +705,6 @@ const Chat = () => {
                 <Stack horizontal className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
                     <Stack className={styles.chatEmptyState}>
-                        <ShieldLockRegular className={styles.chatIcon} style={{ color: 'black', height: "200px", width: "200px" }} />
-                        <h1 className={styles.chatEmptyStateTitle}>Please try again</h1>
                         <h2 className={styles.chatEmptyStateSubtitle}>
                             To access the chat, please close this browser window and open a new one.
                             If the problem persists after a few minutes, contact your administrator.
