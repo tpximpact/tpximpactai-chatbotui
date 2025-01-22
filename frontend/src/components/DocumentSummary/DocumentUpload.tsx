@@ -165,6 +165,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 }
                 fileList.items.add(file);
             }
+            console.log("about to upload files")
             setUploading(fileNames);
             const res = await uploadFiles(fileList.files);
             if (res.status === 200) {
@@ -172,7 +173,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 initiateWebSocket(resJson[0]['Documents']);                
                 setProgress(1/9)
             } else {
-                deleteDocuments(fileNames);
+                throw new Error('Error uploading files');
             }
         } catch (error) {
             console.error('Error uploading files:', error);
