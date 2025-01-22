@@ -16,27 +16,10 @@ export async function conversationApi(options: ConversationRequest, abortSignal:
     return response;
 }
 
-export async function documentSummaryApi(filenames: string[], prompt: string): Promise<Response> {
-    try {
-        const response = await fetch("/documentsummary", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ filenames, prompt }), // Serialize the object to JSON
-        });
-        return response;
-    } catch (error) {
-        // Handle fetch errors
-        console.error("Error fetching data:", error);
-        throw error; // Re-throw the error to be caught by the caller
-    }
-}
-
 
 export async function documentSummaryReduceApi(filenames: string[], prompt: string): Promise<Response> {
     try {
-        const response = await fetch("/documentsummary/reduce", {
+        const response = await fetch("/documents/reduce", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -355,7 +338,7 @@ export const frontendSettings = async (): Promise<Response | null> => {
 }
 
 export const getDocuments = async (): Promise<Response | null> => {
-    const response = await fetch("/get_documents", {
+    const response = await fetch("/documents/get", {
         method: "GET",
     }).then((res) => {
         return res
@@ -367,7 +350,7 @@ export const getDocuments = async (): Promise<Response | null> => {
 }
 
 export const deleteDocuments = async (filenames: string[]): Promise<Response | null> => {
-    const response = await fetch("/delete_documents", {
+    const response = await fetch("/documents/delete", {
         method: "POST",
         body: JSON.stringify({
             filenames: filenames
@@ -417,7 +400,7 @@ export const uploadFiles = async (files: FileList): Promise<Response> => {
     for (let i = 0; i < files.length; i++) {
         formData.append("file", files[i]);
     }
-    const response = await fetch("/upload_documents", {
+    const response = await fetch("/documents/upload", {
         method: "POST",
         body: formData,
     })
@@ -426,6 +409,30 @@ export const uploadFiles = async (files: FileList): Promise<Response> => {
     })
     .catch((err) => {
         console.error("There was an issue uploading the file.");
+        let errRes: Response = {
+            ...new Response,
+            ok: false,
+            status: 500,
+        }
+        return errRes;
+    })
+    return response;
+}
+
+export const saveFiles = async (files: FileList): Promise<Response> => {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        formData.append("file", files[i]);
+    }
+    const response = await fetch("/documents/save", {
+        method: "POST",
+        body: formData,
+    })
+    .then((res) => {
+        return res
+    })
+    .catch((err) => {
+        console.error("There was an issue saving the file.");
         let errRes: Response = {
             ...new Response,
             ok: false,

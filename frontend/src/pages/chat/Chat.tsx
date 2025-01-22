@@ -768,7 +768,7 @@ const Chat = () => {
                                     </>
                                 ) : (
                                     <>
-                                    {dev_mode ? "DEV MODE. " : null}This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
+                                    {dev_mode ? "DEVELOPMENT APP. " : null}This is a private instance of ChatGPT, so you can ask questions involving sensitive or confidential data.<br/> Please read our 
                                     <a onClick={openModal} href="#" >Generative AI Guidance</a>
                                     document before using this tool.
                                     <p>

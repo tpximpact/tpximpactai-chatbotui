@@ -66,7 +66,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     return;
                 }
 
-                const ws = new WebSocket("/documentsummary/refine");
+                const ws = new WebSocket("/documents/refine");
                 setRefineWS(ws);
 
                 ws.onmessage = (event) => {

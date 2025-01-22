@@ -2,6 +2,8 @@ import json
 import logging
 import os
 from dotenv import load_dotenv
+import tempfile
+
 
 from quart import (
     Blueprint,
@@ -27,8 +29,6 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
-
-
     @app.after_request
     def add_security_headers(response):
 
@@ -61,7 +61,6 @@ async def favicon():
 @bp.route("/assets/<path:path>")
 async def assets(path):
     return await send_from_directory("static/assets", path)
-
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
@@ -134,7 +133,8 @@ async def refine_progress():
 async def document_summary():
     return await documentsummary()
 
-@bp.websocket('/process_documents')
+
+@bp.websocket('/documents/process')
 async def process_documents():
     try:
         data = await websocket.receive()
@@ -150,7 +150,6 @@ async def process_documents():
 @bp.route("/upload_documents", methods=["POST"])
 async def upload_documents_route():
     return await upload_documents()
-
 
 @bp.route("/get_documents", methods=["GET"])
 async def get_documents_route():
