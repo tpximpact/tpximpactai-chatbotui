@@ -830,7 +830,6 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 blob_data = blob_client.download_blob()
                 blob_data.readinto(file)
             
-            # Determine file type and use appropriate loader
             if blob_name.lower().endswith('.pdf'):
                 loader = PyPDFLoader(file_path)
             elif blob_name.lower().endswith('.txt'):
