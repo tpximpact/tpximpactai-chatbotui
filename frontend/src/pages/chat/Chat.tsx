@@ -704,8 +704,7 @@ const Chat = () => {
             {showAuthMessage ? (
                 <Stack horizontal className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
-                    <Stack className={styles.chatEmptyState + " " + styles.authMessage}>
-                        <h1 className={styles.chatEmptyStateTitle}>Please try again</h1>
+                    <Stack className={styles.chatEmptyState}>
                         <h2 className={styles.chatEmptyStateSubtitle}>
                             To access the chat, please close this browser window and open a new one.
                             If the problem persists after a few minutes, contact your administrator.

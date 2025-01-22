@@ -80,7 +80,7 @@ const Layout = () => {
                         </Link>
                     </Stack>
                     <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
-                        {ui?.show_share_button &&<ShareButton onClick={handleUseCasesClick} text={useCaseLabel} />}
+                    <ShareButton onClick={handleUseCasesClick} text={useCaseLabel} />
                     </Stack>
                 </Stack>
             </header>

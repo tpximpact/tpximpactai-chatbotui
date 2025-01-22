@@ -39,10 +39,6 @@
     width:90%
 }
 
-.chatAuthMessage {
-    animation: fadeIn 0.9s ease-in;
-}
-
 .chatEmptyStatePreTitle {
     font-style: normal;
     font-size: 36px;
