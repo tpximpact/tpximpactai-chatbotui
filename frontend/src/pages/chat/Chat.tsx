@@ -704,8 +704,7 @@ const Chat = () => {
             {showAuthMessage ? (
                 <Stack horizontal className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
-                    <Stack className={styles.chatEmptyState}>
-                        <ShieldLockRegular className={styles.chatIcon} style={{ color: 'black', height: "200px", width: "200px" }} />
+                    <Stack className={styles.chatEmptyState + " " + styles.authMessage}>
                         <h1 className={styles.chatEmptyStateTitle}>Please try again</h1>
                         <h2 className={styles.chatEmptyStateSubtitle}>
                             To access the chat, please close this browser window and open a new one.
