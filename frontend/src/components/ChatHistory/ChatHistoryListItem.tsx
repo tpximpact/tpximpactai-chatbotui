@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DefaultButton, Dialog, DialogFooter, DialogType, Text, IconButton, List, PrimaryButton, Separator, Stack, TextField, ITextField, Spinner, SpinnerSize } from '@fluentui/react';
+import { DefaultButton, Dialog, DialogFooter, DialogType, Text, IconButton, List, PrimaryButton, Separator, Stack, TextField, ITextField, Spinner, SpinnerSize, IDialogContentProps } from '@fluentui/react';
 
 import { AppStateContext } from '../../state/AppProvider';
 import { GroupedChatHistory } from './ChatHistoryList';
@@ -10,6 +10,7 @@ import { Conversation } from '../../api/models';
 import { historyDelete, historyRename, historyList } from '../../api';
 import { useEffect, useRef, useState, useContext } from 'react';
 import { XMarkIcon, CheckIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import COLOURS from '../../constants/COLOURS';
 
 interface ChatHistoryListItemCellProps {
   item?: Conversation;
@@ -50,18 +51,37 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
     
     const appStateContext = React.useContext(AppStateContext)
     const isSelected = item?.id === appStateContext?.state.currentChat?.id;
-    const dialogContentProps = {
+    const dialogContentProps: IDialogContentProps  = {
         type: DialogType.close,
         title: 'Are you sure you want to delete this item?',
         closeButtonAriaLabel: 'Close',
         subText: 'The history of this chat session will permanently removed.',
+        styles: {
+            subText: { fontFamily:'DMSans-Regular' }, 
+            title: { fontFamily:'PlayfairDisplay-Regular' }, 
+            inner: { fontFamily:'DMSans-Regular' }, 
+            content: { fontFamily:'DMSans-Regular' },
+        },
+        topButtonsProps: [
+            {
+                onRenderIcon: () => <XMarkIcon color="black" height={20} width={20}/>,
+                onClick: () => {
+                    toggleDeleteDialog()
+                },
+                style: {
+                    zIndex: 10,
+                    position: 'absolute',
+                    backgroundColor: 'white',
+                }
+            }
+        ]
     };
 
     const modalProps = {
         titleAriaId: 'labelId',
         subtitleAriaId: 'subTextId',
         isBlocking: true,
-        styles: { main: { maxWidth: 450 } },
+        styles: { main: { maxWidth: 450, borderRadius:'20px', fontFamily:'DMSans-Regular', padding: '10px' }},
     }
 
     if (!item) {
@@ -264,8 +284,8 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                 modalProps={modalProps}
             >
                 <DialogFooter>
-                <PrimaryButton onClick={onDelete} text="Delete" />
-                <DefaultButton onClick={toggleDeleteDialog} text="Cancel" />
+                <PrimaryButton onClick={onDelete} text="Delete" style={{backgroundColor:COLOURS.blue, borderRadius:'12px', borderColor:COLOURS.blue}} />
+                <DefaultButton onClick={toggleDeleteDialog} text="Cancel" style={{borderRadius:'12px'}} />
                 </DialogFooter>
             </Dialog>
         </Stack>

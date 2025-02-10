@@ -14,6 +14,7 @@ import remarkGfm from "remark-gfm";
 import supersub from 'remark-supersub'
 import { ThumbDislike20Filled, ThumbLike20Filled } from "@fluentui/react-icons";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
+import { Accordion } from "../Accordion";
 
 interface Props {
     answer: AskResponse;
@@ -231,9 +232,8 @@ export const Answer = ({
                                 >
                                 <span>{parsedAnswer.citations.length > 1 ? parsedAnswer.citations.length + " references" : "1 reference"}</span>
                                 </Text>
-                                <FontIcon className={styles.accordionIcon}
-                                onClick={handleChevronClick} iconName={chevronIsExpanded ? 'ChevronDown' : 'ChevronRight'}
-                                />
+
+                                <Accordion isOpen={chevronIsExpanded} onClick={handleChevronClick} size={12} />
                             </Stack>
                             
                         </Stack>

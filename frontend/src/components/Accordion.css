@@ -1,0 +1,9 @@
+.chevron-icon {
+    transition: transform 0.2s ease-in-out;
+    width: 20px;
+    height: 20px;
+}
+
+.chevron-icon.rotate {
+    transform: rotate(90deg);
+}
