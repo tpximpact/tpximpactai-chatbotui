@@ -1,4 +1,4 @@
-import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, IButtonStyles, ICommandBarStyles, IContextualMenuItem, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text, mergeStyles } from "@fluentui/react";
+import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, IButtonStyles, ICommandBarStyles, IContextualMenuItem, IDialogContentProps, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text, mergeStyles } from "@fluentui/react";
 import { useBoolean } from '@fluentui/react-hooks';
 
 import styles from "./ChatHistoryPanel.module.css"
@@ -8,7 +8,7 @@ import React from "react";
 import ChatHistoryList from "./ChatHistoryList";
 import { ChatHistoryLoadingState, historyDeleteAll } from "../../api";
 import COLOURS from "../../constants/COLOURS";
-import { XCircleIcon, EllipsisHorizontalCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, EllipsisHorizontalCircleIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ChatHistoryPanelProps {
 
@@ -49,19 +49,37 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
     const [clearing, setClearing] = React.useState(false)
     const [clearingError, setClearingError] = React.useState(false)
 
-    const clearAllDialogContentProps = {
+    const clearAllDialogContentProps: IDialogContentProps = {
         type: DialogType.close,
         title: !clearingError? 'Are you sure you want to clear all chat history?' : 'Error deleting all of chat history',
         closeButtonAriaLabel: 'Close',
         subText: !clearingError ? 'All chat history will be permanently removed.' : 'Please try again. If the problem persists, please contact the site administrator.',
-        styles: { subText: { fontFamily:'DMSans-Regular' }, title: { fontFamily:'PlayfairDisplay-Regular' }, inner: { fontFamily:'DMSans-Regular' }, content: { fontFamily:'DMSans-Regular'}},
+        styles: {
+            subText: { fontFamily:'DMSans-Regular' }, 
+            title: { fontFamily:'PlayfairDisplay-Regular' }, 
+            inner: { fontFamily:'DMSans-Regular' }, 
+            content: { fontFamily:'DMSans-Regular' },
+        },
+        topButtonsProps: [
+            {
+                onRenderIcon: () => <XMarkIcon color="black" height={20} width={20}/>,
+                onClick: () => {
+                    toggleClearAllDialog()
+                },
+                style: {
+                    zIndex: 10,
+                    position: 'absolute',
+                    backgroundColor: 'white',
+                }
+            }
+        ]
     };
     
     const modalProps = {
         titleAriaId: 'labelId',
         subtitleAriaId: 'subTextId',
         isBlocking: true,
-        styles: { main: { maxWidth: 450, borderRadius:'20px', fontFamily:'DMSans-Regular' }},
+        styles: { main: { maxWidth: 450, borderRadius:'20px', fontFamily:'DMSans-Regular', padding: '10px' }},
 
     }
 
