@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, IconButton } from '@fluentui/react';
 import styles from './GuidanceModal.module.css'; 
-
+import { XMarkIcon } from '@heroicons/react/24/outline';
 interface CustomModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,7 +18,7 @@ const GuideanceModal: React.FC<CustomModalProps> = ({ isOpen, onClose }) => {
     <div className={styles.modalContainer}>
         <IconButton
             onMouseOver={undefined}
-          iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
+          onRenderIcon={() => <XMarkIcon color="black" height={25} width={25}/>}
           ariaLabel="Close"
           onClick={onClose}
           styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}

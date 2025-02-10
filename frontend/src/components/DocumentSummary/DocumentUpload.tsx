@@ -7,6 +7,8 @@ import FileIcon from './FileIcon'
 import { CommandBarButton, Dialog, DialogType } from '@fluentui/react'
 import styles from './DocumentUpload.module.css'
 import { useBoolean } from '@fluentui/react-hooks'
+import { ArrowUpTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
+
 
 const baseStyle = {
     borderColor: 'black',
@@ -372,7 +374,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                             }
                         }}
                         className={styles.commandBarButton}
-                        iconProps={{ iconName: 'Upload' }}
+                        onRenderIcon={() => <ArrowUpTrayIcon color="black" height={20} width={20}/>}
                         onClick={()=> {inputRef.current?.click()}}
                         disabled={documents.length > 9}
                         aria-label="document summary button"
@@ -400,7 +402,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
                             }
                         }}
                         className={styles.commandBarButton}
-                        iconProps={{ iconName: 'Delete' }}
+                        onRenderIcon={() => <TrashIcon color="black" height={20} width={20}/>}
                         onClick={handleDelete}
                         disabled={selectedFiles.length === 0}
                         aria-label="document summary button"

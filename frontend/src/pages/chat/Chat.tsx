@@ -18,7 +18,7 @@ import { XSSAllowTags } from "../../constants/xssAllowTags";
 import arrowLeft from "../../assets/fatarrowleft.png";
 import arrowRight from "../../assets/fatarrowright.png";
 
-
+import { PencilSquareIcon, ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import {
     ChatMessage,
@@ -913,7 +913,7 @@ const Chat = () => {
                                         }
                                     }}
                                     className={styles.newChatIcon}
-                                    iconProps={{ iconName: 'SingleColumnEdit' }}
+                                    onRenderIcon={() => <PencilSquareIcon color="black" height={20} width={20}/>}
                                     onClick={newChat}
                                     disabled={disabledButton()}
                                     aria-label="start a new chat button"
@@ -941,7 +941,7 @@ const Chat = () => {
                                         }
                                     }}
                                     className={styles.documentSummaryIcon}
-                                    iconProps={{ iconName: 'BulkUpload' }}
+                                    onRenderIcon={() => <ArrowUpTrayIcon color="black" height={20} width={20}/>}
                                     onClick={openDocSumModal}
                                     disabled={false}
                                     aria-label="document summary button"
@@ -998,7 +998,7 @@ const Chat = () => {
                                     <IconButton
                                     
                                         onMouseOver={undefined}
-                                        iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
+                                        onRenderIcon={() => <XMarkIcon color="black" height={25} width={25}/>}
                                         ariaLabel="Close"
                                         onClick={closeHModal}
                                         styles={{ root: { position: 'absolute', top: '10px', right: '10px', borderRadius:'10px'} }}
@@ -1021,7 +1021,7 @@ const Chat = () => {
                         <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
                             <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
                                 <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
-                                <IconButton iconProps={{ iconName: 'Cancel', styles: {root: {color:'black'}} }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
+                                <IconButton onRenderIcon={() => <XMarkIcon color="black" height={25} width={25}/>} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
                             </Stack>
                             <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
                             <div tabIndex={0}>

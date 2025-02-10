@@ -1,13 +1,10 @@
 import { Outlet, Link } from "react-router-dom";
 import styles from "./Layout.module.css";
-import Contoso from "../../assets/Contoso.svg";
 import { CopyRegular } from "@fluentui/react-icons";
 import { Dialog, Stack, TextField } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
-import { HistoryArrowButton, HistoryButton, ShareButton } from "../../components/common/Button";
+import { ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
-import { CosmosDBStatus } from "../../api";
-import PrimaryX from "../../assets/Primary X.png";
 import PrimaryWhiteLogo from  "../../assets/Primary white logo.png";
 
 const Layout = () => {
@@ -48,6 +45,7 @@ const Layout = () => {
     useEffect(() => { }, [appStateContext?.state.isCosmosDBAvailable.status]);
 
     useEffect(() => {
+
         const handleResize = () => {
           if (window.innerWidth < 480) {
             setUseCaseLabel(undefined)
