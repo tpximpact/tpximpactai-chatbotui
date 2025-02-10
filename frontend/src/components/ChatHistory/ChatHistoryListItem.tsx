@@ -9,6 +9,7 @@ import { useBoolean } from '@fluentui/react-hooks';
 import { Conversation } from '../../api/models';
 import { historyDelete, historyRename, historyList } from '../../api';
 import { useEffect, useRef, useState, useContext } from 'react';
+import { XMarkIcon, CheckIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface ChatHistoryListItemCellProps {
   item?: Conversation;
@@ -205,7 +206,7 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                                         onKeyDown={e => e.key === " " || e.key === 'Enter' ? handleSaveEdit(e) : null} 
                                         onClick={(e) => handleSaveEdit(e)} 
                                         aria-label='confirm new title' 
-                                        iconProps={{iconName: 'CheckMark'}} 
+                                        onRenderIcon={() => <CheckIcon color="green" height={17} width={17}/>}
                                         styles={{root: { color: 'green', marginLeft: '5px', borderRadius:'10px' } }} />
                                     <IconButton 
                                         role='button' 
@@ -213,7 +214,7 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                                         onKeyDown={e => e.key === " " || e.key === 'Enter' ? cancelEditTitle() : null} 
                                         onClick={() => cancelEditTitle()} 
                                         aria-label='cancel edit title' 
-                                        iconProps={{iconName: 'Cancel'}} 
+                                        onRenderIcon={() => <XMarkIcon color="red" height={17} width={17}/>}
                                         styles={{ root: { color: 'red', marginLeft: '5px', borderRadius:'10px' } }} />
                                 </Stack>
                             </Stack.Item>)}
@@ -229,18 +230,16 @@ export const ChatHistoryListItemCell: React.FC<ChatHistoryListItemCellProps> = (
                     {(isSelected || isHovered) && <Stack horizontal horizontalAlign='end'>
                     <IconButton
                         className={styles.itemButton}
-                        iconProps={{
-                            iconName: 'Delete',
-                        }}
+                        onRenderIcon={() => <TrashIcon color="black" height={15} width={15}/>}
                         title="Delete"
                         styles={{ root: {borderRadius:'10px'} }}
-
                         onClick={toggleDeleteDialog}
                         onKeyDown={e => e.key === " " ? toggleDeleteDialog() : null}
                     />
                     <IconButton 
                         className={[styles.itemButton, styles.itemButton2].join(' ')} 
-                        color='#141414' iconProps={{ iconName: 'Edit' }} 
+                        color='#141414' 
+                        onRenderIcon={() => <PencilIcon color="black" height={15} width={15}/>}
                         title="Edit" 
                         styles={{ root: {borderRadius:'10px'} }}
                         onClick={onEdit} 

@@ -1,4 +1,4 @@
-import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarStyles, IContextualMenuItem, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text, mergeStyles } from "@fluentui/react";
+import { CommandBarButton, ContextualMenu, DefaultButton, Dialog, DialogFooter, DialogType, IButtonStyles, ICommandBarStyles, IContextualMenuItem, IStackStyles, PrimaryButton, Spinner, SpinnerSize, Stack, StackItem, Text, mergeStyles } from "@fluentui/react";
 import { useBoolean } from '@fluentui/react-hooks';
 
 import styles from "./ChatHistoryPanel.module.css"
@@ -8,6 +8,7 @@ import React from "react";
 import ChatHistoryList from "./ChatHistoryList";
 import { ChatHistoryLoadingState, historyDeleteAll } from "../../api";
 import COLOURS from "../../constants/COLOURS";
+import { XCircleIcon, EllipsisHorizontalCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface ChatHistoryPanelProps {
 
@@ -17,17 +18,29 @@ export enum ChatHistoryPanelTabs {
     History = "History"
 }
 
-const commandBarStyle: ICommandBarStyles = {
-    root: {
+
+const commandBarStackStyle: Partial<IStackStyles> = {
+    root: { 
+        height: '40px',
+    },
+};
+
+const commandBarButtonStyle: Partial<IButtonStyles> = {
+    root: { 
+        height: '40px',
         padding: '0',
         display: 'flex',
         justifyContent: 'center',
         backgroundColor: 'transparent',
         borderRadius:'15px'
+    },
+    rootHovered: {
+        backgroundColor: 'rgba(0, 0, 200, 0.1)',
+    },
+    rootPressed: {
+        backgroundColor: 'rgba(0, 0, 200, 0.1)',
     }
 };
-
-const commandBarButtonStyle: Partial<IStackStyles> = { root: { height: '50px' } };
 
 export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
     const appStateContext = useContext(AppStateContext)
@@ -53,7 +66,7 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
     }
 
     const menuItems: IContextualMenuItem[] = [
-        { key: 'clearAll', text: 'Clear all chat history', iconProps: { iconName: 'Delete' }},
+        { key: 'clearAll', text: 'Clear all chat history', iconProps: { iconName: 'Delete' }, onRenderIcon: () => <TrashIcon color="black" height={17} width={17}/>},
     ];
 
     const handleHistoryClick = () => {
@@ -95,13 +108,13 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
                     <Text role="heading" aria-level={2} className={styles.panelTitle}>CHAT HISTORY</Text>
                 </StackItem>
                 <Stack verticalAlign="start">
-                    <Stack horizontal styles={commandBarButtonStyle}>
+                    <Stack horizontal styles={commandBarStackStyle}>
                         <CommandBarButton
-                            iconProps={{ iconName: 'More', className: styles.panelButtons }}
+                            onRenderIcon={() => <EllipsisHorizontalCircleIcon color="white" height={20} width={20}/>}
                             title={"Clear all chat history"}
                             onClick={onShowContextualMenu}
                             aria-label={"clear all chat history"}
-                            styles={commandBarStyle}
+                            styles={commandBarButtonStyle}
                             role="button"
                             id="moreButton"
                         />
@@ -112,15 +125,15 @@ export function ChatHistoryPanel(props: ChatHistoryPanelProps) {
                             onItemClick={toggleClearAllDialog}
                             onDismiss={onHideContextualMenu}
                         />
-                        <CommandBarButton
-                            iconProps={{ iconName: 'Cancel', className: styles.panelButtons }}
-                            title={"Hide"}
-                            onClick={handleHistoryClick}
-                            aria-label={"hide button"}
-                            styles={commandBarStyle}
-                            role="button"
-                        />
-                    </Stack>
+                    <CommandBarButton
+                        onRenderIcon={() => <XCircleIcon color="white" height={20} width={20}/>}
+                        title={"Hide"}
+                        onClick={handleHistoryClick}
+                        aria-label={"hide button"}
+                        styles={commandBarButtonStyle}
+                        role="button"
+                    />                    
+                </Stack>
                 </Stack>
             </Stack>
             <Stack aria-label="chat history panel content"

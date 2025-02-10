@@ -3,7 +3,7 @@ import { Modal, IconButton, Button } from '@fluentui/react';
 import styles from './QuestionInput.module.css'; // Import custom CSS styles for the modal
 import { ShareButton } from '../common/Button';
 import useCaseData from './useCaseData.json'
-
+import { XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 // Define Props for Modal Component
 interface CustomModalProps {
@@ -47,7 +47,7 @@ const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, s
         <div style ={{display: 'flex', flexDirection: 'row'}}>
                 <IconButton
               onMouseOver={undefined}
-              iconProps={{ iconName: 'Back', styles: { root: { color: 'black'}}}}
+              onRenderIcon={() => <ArrowLeftIcon color="black" height={25} width={25}/>}
               ariaLabel="Close"
               onClick={() => setPage(-1)}
               styles={{ root: {borderRadius:'10px', margin:'15px 10px 10px 0px'} }}
@@ -115,7 +115,7 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
     <div className={styles.modalContainer}>
         <IconButton
             onMouseOver={undefined}
-          iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
+          onRenderIcon={() => <XMarkIcon color="black" height={25} width={25}/>}
           ariaLabel="Close"
           onClick={onClose}
           styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}

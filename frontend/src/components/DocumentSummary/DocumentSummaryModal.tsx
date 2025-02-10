@@ -7,6 +7,7 @@ import { deleteDocuments, documentSummaryReduceApi, getUserIdentity } from '../.
 import LoadingBar from '../LoadingBar';
 import Loading from '../Loading';
 import { set } from 'lodash';
+import { XMarkIcon, ChevronLeftIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface CustomModalProps {
     disabled:boolean
@@ -195,11 +196,11 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
             <div className={styles.modalContainer}>
                 <IconButton
                     onMouseOver={undefined}
-                iconProps={{ iconName: 'Cancel', styles: { root: { color: 'black'}}}}
-                ariaLabel="Close"
-                onClick={handleClose}
-                styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}
-                className={styles.closeButton} 
+                    onRenderIcon={() => <XMarkIcon color="black" height={25} width={25}/>}
+                    ariaLabel="Close"
+                    onClick={handleClose}
+                    styles={{ root: { position: 'absolute', top: '10px', right: '20px', borderRadius:'10px'} }}
+                    className={styles.closeButton} 
                 />
 
                 {uploading.length > 0 ? 
@@ -269,7 +270,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     <div className = {styles.promptBottomBarContainer}>
                         <IconButton
                             onMouseOver={undefined}
-                            iconProps={{ iconName: 'Back', styles: { root: { color: 'black' } } }}
+                            onRenderIcon={() => <ArrowLeftIcon color="black" height={25} width={25}/>}
                             ariaLabel="Close"
                             onClick={() => {
                                 if (short) {
@@ -316,7 +317,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                     </div>
                         <IconButton
                             onMouseOver={undefined}
-                            iconProps={{ iconName: 'Back', styles: { root: { color: 'black'}}}}
+                            onRenderIcon={() => <ArrowLeftIcon color="black" height={25} width={25}/>}
                             ariaLabel="Close"
                             onClick={() => setSummarising([])}
                             styles={{ root: {borderRadius:'10px', margin:'10px 10px 10px 0px'} }}
