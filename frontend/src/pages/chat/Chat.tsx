@@ -785,7 +785,7 @@ const Chat = () => {
                             </Stack>
 
                         ) : (
-                            <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px" }} role="log">
+                            <div className={styles.chatMessageStream} style={{ marginBottom: isLoading || filenames.length > 0 ? "40px" : "0px" }} role="log">
                                 {messages.map((answer, index) => (
                                     <>
                                         {answer.role === "user" && !answer.hidden ? (

@@ -45,7 +45,6 @@ from langchain_core.documents import Document
 from langchain_community.vectorstores.azuresearch import AzureSearch
 from langchain_community.retrievers import AzureCognitiveSearchRetriever
 
-
 MONITORING_ENABLED = False
 if MONITORING_ENABLED:
     configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
@@ -79,6 +78,11 @@ DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
 DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARNING)  # Change from DEBUG to WARNING or INFO
+azure_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
+azure_logger.setLevel(logging.WARNING)  # or logging.ERROR for even less logging
+
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
@@ -198,6 +202,9 @@ AZURE_MLINDEX_QUERY_TYPE = os.environ.get("AZURE_MLINDEX_QUERY_TYPE")
 AUTH_ENABLED = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
 CHAT_HISTORY_ENABLED = AZURE_COSMOSDB_ACCOUNT and AZURE_COSMOSDB_DATABASE and AZURE_COSMOSDB_CONVERSATIONS_CONTAINER
 SANITIZE_ANSWER = os.environ.get("SANITIZE_ANSWER", "false").lower() == "true"
+
+print('SEARCH ENABLE IN DOMAIN', SEARCH_ENABLE_IN_DOMAIN)
+print('AZURE SEARCH ENABLE IN DOMAIN', AZURE_SEARCH_ENABLE_IN_DOMAIN)
 frontend_settings = { 
     "auth_enabled": AUTH_ENABLED, 
     "feedback_enabled": AZURE_COSMOSDB_ENABLE_FEEDBACK and CHAT_HISTORY_ENABLED,
@@ -759,6 +766,9 @@ def prepare_model_args(request_body):
         )
     elif len(request_filenames) > 0:
         print('Request filenames: ', request_filenames)
+        editted_messages = messages.copy()
+        editted_messages[-1]["content"] = "You are answering questions about the following documents: " + ", ".join(request_filenames) + ". " + editted_messages[-1]["content"]
+        model_args["messages"] = editted_messages
         model_args["extra_body"] = {
             "data_sources": [get_configured_data_source(user_id, request_filenames)]
         }

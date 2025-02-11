@@ -19,6 +19,7 @@ from backend.utils import format_as_ndjson, format_stream_response, format_non_s
 
 async def send_chat_request(request):
     model_args = prepare_model_args(request)
+    print(f"MODEL ARGS: {model_args}")
     try:
         azure_openai_client = init_openai_client()
         response = await azure_openai_client.chat.completions.create(**model_args)

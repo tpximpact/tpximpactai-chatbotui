@@ -20,8 +20,7 @@ from azure.core.credentials import AzureNamedKeyCredential
 from langchain.schema import Document
 
 from backend.setup import AZURE_OPENAI_MODEL, AZURE_OPENAI_SYSTEM_MESSAGE, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY, get_doc_from_azure_blob_storage, init_container_client, init_openai_client, init_search_client, init_vector_store
-from werkzeug.utils import secure_filename
-
+from backend.utils import secure_filename
 
 def chunkString(text, chunk_size,overlap):
     SENTENCE_ENDINGS = [".", "!", "?"]
