@@ -8,3 +8,6 @@ __pycache__/
 .devcontainer
 .env.sample
 static/assets
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup

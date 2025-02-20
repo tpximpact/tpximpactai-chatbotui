@@ -112,3 +112,18 @@
         margin-left: 26px;
     }
 }
+
+.devMode {
+    background-color: red;
+    color: #FFFFFF;
+}
+
+.devModeText {
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    color: #242424;
+}
