@@ -130,10 +130,6 @@ locals {
   }
   app_use_MI = true
 
-<<<<<<< HEAD
-=======
-
->>>>>>> c2fc8ab (terraform updates)
   acr_name     = "tpximpactaicontainerreg"
   acr_resource_group = "IAC-TPX-IMPACTAI-DEV"
 
@@ -162,20 +158,12 @@ locals {
 
 
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> c2fc8ab (terraform updates)
 data "azurerm_container_registry" "acr" {
   name                = local.acr_name
   resource_group_name = local.acr_resource_group
 }
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> c2fc8ab (terraform updates)
 resource "azurerm_resource_group" "rg" {
   name     = local.resource_group_name
   location = local.location
@@ -507,12 +495,6 @@ resource "azurerm_linux_web_app" "webapp" {
     "XDT_MicrosoftApplicationInsights_PreemptSdk"     = "disabled"
     "AUTH_ENABLED"                                    = local.app_auth_enabled
     "LOCAL_DEV"                                       = "false"
-<<<<<<< HEAD
-    "DOCKER_REGISTRY_SERVER_URL"                     = "https://${local.acr_name}.azurecr.io"
-    "DOCKER_REGISTRY_SERVER_USERNAME"                = local.acr_name
-    "DOCKER_REGISTRY_SERVER_PASSWORD"                = data.azurerm_container_registry.acr.admin_password
-=======
->>>>>>> c2fc8ab (terraform updates)
     "DOCKER_ENABLE_CI"                               = "true"
   }
 
@@ -597,12 +579,6 @@ resource "azurerm_linux_web_app" "webappdev" {
     "XDT_MicrosoftApplicationInsights_PreemptSdk"     = "disabled"
     "DEV_MODE"                                        = "True"
     "AUTH_ENABLED"                                    = local.app_auth_enabled
-<<<<<<< HEAD
-    "DOCKER_REGISTRY_SERVER_URL"                     = "https://${local.acr_name}.azurecr.io"
-    "DOCKER_REGISTRY_SERVER_USERNAME"                = local.acr_name
-    "DOCKER_REGISTRY_SERVER_PASSWORD"                = data.azurerm_container_registry.acr.admin_password
-=======
->>>>>>> c2fc8ab (terraform updates)
     "DOCKER_ENABLE_CI"                               = "true"
   }
 }
