@@ -3,7 +3,7 @@
 echo.
 echo Restoring backend python packages
 echo.
-call python -m pip install -r requirements.txt
+call powershell -ExecutionPolicy Bypass -File .\scripts\loadenv.ps1
 if "%errorlevel%" neq "0" (
     echo Failed to restore backend python packages
     exit /B %errorlevel%

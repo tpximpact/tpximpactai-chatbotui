@@ -19,35 +19,14 @@ provider "azurerm" {
 
 locals {
   # Resource Group settings
-  resource_group_name = "IAC-TPX-IMPACTAI-DEV-TF"
+  resource_group_name = "IAC-TPX-IMPACTAI-DEV-TFTEST"
   location            = "UK South"
-  prefix    = "tfimpactai"
-  # shared_resource_group_name = "IAC-SHARED"
-  # shared_vnet_name = "shared-vnet"
-  vnet_name = "${local.prefix}-vnet"
+  prefix    = "impactaidev"
 
   # Network settings
   vnet_address_space = ["10.0.0.0/16"]
   subnet_prefixes    = ["10.0.0.0/28"]
 
-  # VPN Gateway settings
-  # vpngateway_name = "tpximpactai-vpngateway"
-  # vpngateway_sku_name = "VpnGw1"
-  # vpngateway_sku_tier = "VpnGw1"
-  # vpngateway_gateway_type = "Vpn"
-  # vpngateway_vpn_type = "RouteBased"
-  # vpngateway_enable_bgp = false
-  # vpngateway_active_active = false
-  # vpngateway_enable_private_ip_address = false
-  # vpngateway_ip_configuration_name = "default"
-  # private_ip_allocation_method = "Dynamic"
-
-  # # VPN Client configuration
-  # vpn_client_address_prefixes = ["172.16.201.0/24"]
-  # vpn_client_protocols = ["OpenVPN"]
-  # vpn_authentication_types = ["Certificate"]
-  # vpn_client_root_cert_name = "caCert"
-  # vpn_client_root_cert_public_data = "MIIDAzCCAeugAwIBAgIUDml517YosQs+2ur7K8Vi7N/6E1MwDQYJKoZIhvcNAQELBQAwETEPMA0GA1UEAwwGVlBOIENBMB4XDTI0MDcwMTE0MjIxOFoXDTM0MDYyOTE0MjIxOFowETEPMA0GA1UEAwwGVlBOIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuSIViO0g1dKRxkCH1oD1IbBZ3qLEK7Roj1YxsERbVpsrsxJ3+cInaJ4yzRScdUvsJBqLQtXRSiTZieoCp1nc116sibrJ+Va6DEzX+oHM2v75bS/GSMDEOa9TutpE61TAZ/7QhekCI5gapwS2kNf+mU/6W8oBYS/wZEF2eKuIP4mDdsVh9GWOvSFbSx8EfeyCCv4NDi1qDxyXJdKVmRy5q3j7z90hBbbTc8AOCFIHHDR/klgdF3+6RCGlwFMzSYCDTP8jcPAGJsENbfefbIfgbR3iuRjX3EeanDuDHg2AKy20i9hzTBBPn3/f8mcMyKiqxbXIDBj5cgT7IPf7YNqc0wIDAQABo1MwUTAdBgNVHQ4EFgQUkxHc5vj+eRnJMvd5eowYCrQ2cBEwHwYDVR0jBBgwFoAUkxHc5vj+eRnJMvd5eowYCrQ2cBEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEACr7AlmPG7Mnjo+Enseg0HHZyPwpNkinG1dzUo4+R1C4QvvgDcQcsRhAWIakHXY3stuGjyLu7oqcflT/rrme2x4Gc0/2Rq73a0zlSPWfZoL/Xjo4r7rEQCuicJhVH3YrQwqaCFUuHbD3NuxFbUEKRvzHjuSjsIbXFIW0JM0amLoVS3QTxh3a52NHVKlgd8yUihwDsYxz4Y+yhHkDEbFS/OpgBqUIw0o2GWbJLLfiFHycTanopaaLw2AYRNn4BFWNxGy1M6UriRTbgFneNvDH5YQ4pwg/3r+hhZ9uSiYB9bbpBwTVnwJmw48wk9vtzJC55PFkamfCSdjoipGSkeS1z7Q=="
 
   # BGP Settings
   bgp_asn             = 65515
@@ -158,6 +137,7 @@ locals {
 
 
 }
+
 data "azurerm_container_registry" "acr" {
   name                = local.acr_name
   resource_group_name = local.acr_resource_group
@@ -167,45 +147,6 @@ data "azurerm_container_registry" "acr" {
 resource "azurerm_resource_group" "rg" {
   name     = local.resource_group_name
   location = local.location
-}
-
-# VNET
-resource "azurerm_virtual_network" "vnet" {
-  name                = local.vnet_name
-  address_space       = local.vnet_address_space
-  location            = local.location
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-# FRONTEND SUBNET
-resource "azurerm_subnet" "sn_frontend" {
-  name                 = "${local.prefix}-frontend-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.2.0/28"]
-  delegation {
-    name = "delegation"
-    service_delegation {
-      name = "Microsoft.Web/serverFarms"
-    }
-  }
-  private_endpoint_network_policies = "Disabled"
-}
-
-# PRIVATE ENDPOINT SUBNET
-resource "azurerm_subnet" "sn_pep" {
-  name                              = "${local.prefix}-pep-subnet"
-  resource_group_name               = azurerm_resource_group.rg.name
-  virtual_network_name              = azurerm_virtual_network.vnet.name
-  address_prefixes                  = ["10.0.2.16/28"]
-  private_endpoint_network_policies = "Disabled"
-  service_endpoints = [
-    "Microsoft.Storage",
-    "Microsoft.Sql",
-    "Microsoft.AzureCosmosDB",
-    "Microsoft.Web",
-    "Microsoft.CognitiveServices"
-  ]
 }
 
 
@@ -500,11 +441,6 @@ resource "azurerm_linux_web_app" "webapp" {
 
 }
 
-resource "azurerm_app_service_virtual_network_swift_connection" "webapp_vnet_integration" {
-  app_service_id = azurerm_linux_web_app.webapp.id
-  subnet_id      = azurerm_subnet.sn_frontend.id
-}
-
 
 # Web App Dev
 resource "azurerm_linux_web_app" "webappdev" {
@@ -583,10 +519,6 @@ resource "azurerm_linux_web_app" "webappdev" {
   }
 }
 
-resource "azurerm_app_service_virtual_network_swift_connection" "webappdev_vnet_integration" {
-  app_service_id = azurerm_linux_web_app.webappdev.id
-  subnet_id      = azurerm_subnet.sn_frontend.id
-}
 
 resource "azurerm_role_assignment" "openai_user_assignment_dev" {
   scope                = azurerm_cognitive_account.openai.id
@@ -696,9 +628,6 @@ resource "azurerm_cognitive_account" "openai" {
   network_acls {
     bypass = "AzureServices"
     default_action = "Deny"
-    virtual_network_rules {
-      subnet_id = azurerm_subnet.sn_pep.id
-    }
   }
 }
 
@@ -727,7 +656,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment_gpt4o" {
   depends_on           = [azurerm_cognitive_account.openai]
   sku {
     name = "GlobalStandard"
-    capacity = 150
+    capacity = 100
   }
   model {
     format  = "OpenAI"
@@ -746,7 +675,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment_embeddings" {
   depends_on           = [azurerm_cognitive_account.openai]
   sku {
     name = "Standard"
-    capacity = 100
+    capacity = 1
   }
   model {
     format  = "OpenAI"
@@ -779,240 +708,3 @@ resource "azurerm_role_assignment" "acr_pull_dev" {
 
 }
 
-
-
-# ADDING A HOSTNAME (NOT TESTED)
-
-# resource "azurerm_app_service_custom_hostname_binding" "example" {
-#   hostname            = "example.com"
-#   app_service_name    = azurerm_app_service.webapp.name
-#   resource_group_name = azurerm_resource_group.rg.name
-#   ssl_state           = "SniEnabled"
-#   thumbprint          = azurerm_app_service_certificate.example.thumbprint
-# }
-# Custom Hostname on WebApp 
-# resource "azurerm_app_service_custom_hostname_binding" "custom_hostname" {
-#   hostname            = "impactai.tpximpact.com"
-#   app_service_name    = azurerm_app_service.webapp.name
-#   resource_group_name = azurerm_resource_group.rg.name
-#   ssl_state           = "SniEnabled"
-#   thumbprint          = "720B9772D8806A5C3DBF62B5DB4B3A00F7F36E5C"
-# }
-
-
-# GATEWAY SETUP
-
-# resource "azurerm_public_ip" "pip" {
-#   name                = local.public_ip_name
-#   location            = "uksouth"
-#   resource_group_name = local.resource_group_name
-#   allocation_method   = "Static"
-#   sku                 = "Standard"
-
-#   idle_timeout_in_minutes = 4
-
-#   tags = {
-#     environment = "Production"
-#   }
-# }
-
-# resource "azurerm_virtual_network_gateway" "vpngateway" {
-#   name                = local.vpngateway_name
-#   location            = local.location
-#   resource_group_name = azurerm_resource_group.rg.name
-#   type = local.vpngateway_gateway_type
-#   sku = local.vpngateway_sku_name
-#   vpn_type     = local.vpngateway_vpn_type
-#   enable_bgp                = local.vpngateway_enable_bgp
-#   active_active             = local.vpngateway_active_active
-
-#   ip_configuration {
-#     name                         = local.vpngateway_ip_configuration_name
-#     public_ip_address_id         = azurerm_public_ip.pip.id
-#     subnet_id                    = azurerm_subnet.sn_gateway_subnet.id
-#   }
-
-#   vpn_client_configuration {
-#     address_space = local.vpn_client_address_prefixes
-#     vpn_client_protocols = local.vpn_client_protocols
-
-#     root_certificate {
-#       name            = local.vpn_client_root_cert_name
-#       public_cert_data = local.vpn_client_root_cert_public_data
-#     }
-#   }
-
-#   bgp_settings {
-#     asn                = local.bgp_asn
-#     peer_weight        = local.bgp_peer_weight
-#   }
-# }
-
-resource "azurerm_private_dns_zone" "search_dns_zone" {
-  name                = "privatelink.search.windows.net"
-  resource_group_name = local.resource_group_name
-  depends_on = [
-    azurerm_resource_group.rg
-  ]
-}
-
-resource "azurerm_private_dns_zone" "cosmosdb_dns_zone" {
-  name                = "privatelink.documents.azure.com"
-  resource_group_name = local.resource_group_name
-  depends_on = [
-    azurerm_resource_group.rg
-  ]
-}
-
-resource "azurerm_private_dns_zone" "openai_dns_zone" {
-  name                = "privatelink.openai.azure.com"
-  resource_group_name = local.resource_group_name
-  depends_on = [
-    azurerm_resource_group.rg
-  ]
-}
-
-resource "azurerm_private_dns_zone" "storage_dns_zone" {
-  name                = "privatelink.blob.core.windows.net"
-  resource_group_name = local.resource_group_name
-  depends_on = [
-    azurerm_resource_group.rg
-  ]
-}
-
-
-resource "azurerm_private_endpoint" "aisearch_pep" {
-  name                = "${local.search_service_name}-pep"
-  location            = local.location
-  resource_group_name = local.resource_group_name
-  subnet_id           = azurerm_subnet.sn_pep.id
-
-  private_dns_zone_group {
-    name                 = "default"
-    private_dns_zone_ids = [azurerm_private_dns_zone.search_dns_zone.id]
-  }
-
-  private_service_connection {
-    name                           = "${local.search_service_name}-pep"
-    private_connection_resource_id = azurerm_search_service.search_service.id
-    is_manual_connection           = false
-    subresource_names              = ["searchService"]
-  }
-  depends_on = [
-    azurerm_search_service.search_service,
-    azurerm_private_dns_zone.search_dns_zone
-  ]
-}
-
-resource "azurerm_private_endpoint" "cosmosdb_pep" {
-  name                = "${local.cosmos_account_name}-pep"
-  location            = local.location
-  resource_group_name = local.resource_group_name
-  subnet_id           = azurerm_subnet.sn_pep.id
-
-  private_dns_zone_group {
-    name                 = "default"
-    private_dns_zone_ids = [azurerm_private_dns_zone.cosmosdb_dns_zone.id]
-  }
-
-  private_service_connection {
-    name                           = "${local.cosmos_account_name}-pep"
-    private_connection_resource_id = azurerm_cosmosdb_account.cosmos_db.id
-    is_manual_connection           = false
-    subresource_names              = ["Sql"]
-  }
-  depends_on = [
-    azurerm_cosmosdb_account.cosmos_db,
-    azurerm_private_dns_zone.cosmosdb_dns_zone
-  ]
-}
-
-resource "azurerm_private_endpoint" "openai_pep" {
-  name                = "${local.openai_name}-pep"
-  location            = local.location
-  resource_group_name = local.resource_group_name
-  subnet_id           = azurerm_subnet.sn_pep.id
-  private_service_connection {
-    name                           = "${local.openai_name}-pep"
-    private_connection_resource_id = azurerm_cognitive_account.openai.id
-    is_manual_connection           = false
-    subresource_names              = ["account"]
-  }
-  
-  private_dns_zone_group {
-    name                 = "default"
-    private_dns_zone_ids = [azurerm_private_dns_zone.openai_dns_zone.id]
-  }
-
-  depends_on = [
-    azurerm_cognitive_account.openai,
-    azurerm_cognitive_deployment.openai_deployment_gpt4o,
-    azurerm_cognitive_deployment.openai_deployment_embeddings,
-    azurerm_private_dns_zone.openai_dns_zone
-
-  ]
-}
-
-resource "azurerm_private_endpoint" "storage_pep" {
-  name                = "${local.storage_account_name}-pep"
-  location            = local.location
-  resource_group_name = local.resource_group_name
-  subnet_id           = azurerm_subnet.sn_pep.id
-
-  private_dns_zone_group {
-    name                 = "default"
-    private_dns_zone_ids = [azurerm_private_dns_zone.storage_dns_zone.id]
-  }
-
-  private_service_connection {
-    name                           = "${local.storage_account_name}-pep"
-    private_connection_resource_id = azurerm_storage_account.storage_account.id
-    is_manual_connection           = false
-    subresource_names              = ["blob"]
-  }
-  depends_on = [
-    azurerm_storage_account.storage_account,
-    azurerm_private_dns_zone.storage_dns_zone
-  ]
-}
-
-
-
-resource "azurerm_private_dns_zone_virtual_network_link" "search_dns_link" {
-  name                  = "${local.prefix}-search-link"
-  resource_group_name   = local.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.search_dns_zone.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-  depends_on = [
-    azurerm_private_dns_zone.search_dns_zone
-  ]
-}
-resource "azurerm_private_dns_zone_virtual_network_link" "cosmosdb_dns_link" {
-  name                  = "${local.prefix}-cosmosdb-link"
-  resource_group_name   = local.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.cosmosdb_dns_zone.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-  depends_on = [
-    azurerm_private_dns_zone.cosmosdb_dns_zone
-  ]
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "openai_dns_link" {
-  name                  = "${local.prefix}-openai-link"
-  resource_group_name   = local.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.openai_dns_zone.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-  depends_on = [
-    azurerm_private_dns_zone.openai_dns_zone
-  ]
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "storage_dns_link" {
-  name                  = "${local.prefix}-storage-link"
-  resource_group_name   = local.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.storage_dns_zone.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-  depends_on = [
-    azurerm_private_dns_zone.storage_dns_zone
-  ]
-}
