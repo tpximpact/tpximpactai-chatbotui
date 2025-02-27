@@ -116,6 +116,8 @@
 .devMode {
     background-color: red;
     color: #FFFFFF;
+    align-items: center;
+    font-family: 'DMSans-Regular', sans-serif;
 }
 
 .devModeText {
