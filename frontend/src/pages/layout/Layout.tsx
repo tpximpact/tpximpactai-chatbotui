@@ -16,6 +16,8 @@ const Layout = () => {
     const [showHistoryLabel, setShowHistoryLabel] = useState<string>("Show chat history");
     const appStateContext = useContext(AppStateContext)
     const ui = appStateContext?.state.frontendSettings?.ui;
+    const dev_mode = appStateContext?.state.frontendSettings?.dev_mode;
+
 
     const handleUseCasesClick = () => {
         appStateContext?.openUseCases();
@@ -65,6 +67,9 @@ const Layout = () => {
       }, []);
     return (
         <div className={styles.layout}>
+            {dev_mode && <div className={styles.devMode}>
+                <div className={styles.devModeText}>This is the development environment. Please do not upload any sensitive data.</div>
+            </div>}
             <header className={styles.header} role={"banner"}>
                 <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
                     <Stack horizontal verticalAlign="center">

@@ -1,10 +1,15 @@
 .venv
 frontend/node_modules
 .env
+!.env.sample
+
 # static
 .azure/
 __pycache__/
 .ipynb_checkpoints/
 .devcontainer
-.env.sample
 static/assets
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup
+secrets.json

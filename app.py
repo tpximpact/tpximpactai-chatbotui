@@ -12,6 +12,10 @@ from quart import (
     send_from_directory,
     render_template
 )
+LOCAL_DEV = os.getenv("LOCAL_DEV", "True")
+if LOCAL_DEV == 'True':
+    print("Loading local dev env")
+    load_dotenv(override=True)
 
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.conversation import clear_messages, conversation_internal, delete_all_conversations, delete_conversation, get_conversation, list_conversations, rename_conversation, update_conversation, update_message, add_conversation
@@ -19,9 +23,6 @@ from backend.document import delete_documents, documentsummary, get_documents, h
 from backend.setup import UI_FAVICON, UI_TITLE, ensure_cosmos, frontend_settings
 
 
-LOCAL_DEV = os.getenv("LOCAL_DEV", "false")
-if LOCAL_DEV == 'true':
-    load_dotenv(override=True)
 
 def create_app():
     app = Quart(__name__)

@@ -3,7 +3,7 @@
 echo.
 echo Restoring backend python packages
 echo.
-call python -m pip install -r requirements.txt
+call powershell -ExecutionPolicy Bypass -File .\scripts\loadenv.ps1
 if "%errorlevel%" neq "0" (
     echo Failed to restore backend python packages
     exit /B %errorlevel%
@@ -33,7 +33,7 @@ echo Starting backend
 echo.    
 cd ..  
 start http://127.0.0.1:50505
-call python -m uvicorn app:app  --port 50505 --reload
+call python -m quart run --port=50505 --host=127.0.0.1 --reload
 if "%errorlevel%" neq "0" (    
     echo Failed to start backend    
     exit /B %errorlevel%    

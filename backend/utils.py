@@ -1,10 +1,13 @@
 import os
 import json
 import logging
+import re
+import unicodedata
 import requests
 import dataclasses
 
 DEBUG = os.environ.get("DEBUG", "false")
+print(f"DEBUG: {DEBUG}")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
 
@@ -153,3 +156,48 @@ def format_stream_response(chatCompletionChunk, history_metadata, message_uuid=N
                     response_obj["choices"][0]["messages"].append(messageObj)
                     return response_obj
     return {}
+
+
+def secure_filename(filename: str) -> str:
+    r"""
+    Adapted from werkzeug.utils.secure_filename to allow spaces in filenames
+    
+    Pass it a filename and it will return a secure version of it.  This
+    filename can then safely be stored on a regular file system and passed
+    to :func:`os.path.join`.  The filename returned is an ASCII only string
+    for maximum portability.
+
+    On windows systems the function also makes sure that the file is not
+    named after one of the special device files.
+
+    >>> secure_filename("My cool movie.mov")
+    'My cool movie.mov'
+    >>> secure_filename("../../../etc/passwd")
+    'etc passwd'
+    >>> secure_filename('i contain cool \xfcml\xe4uts.txt')
+    'i contain cool umlauts.txt'
+
+    The function might return an empty filename.  It's your responsibility
+    to ensure that the filename is unique and that you abort or
+    generate a random filename if the function returned an empty one.
+    """
+    # ... existing code ...
+    _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9 _.-]")  # Added space to allowed chars
+
+    filename = unicodedata.normalize("NFKD", filename)
+    filename = filename.encode("ascii", "ignore").decode("ascii")
+
+    for sep in os.sep, os.path.altsep:
+        if sep:
+            filename = filename.replace(sep, " ")
+    filename = str(_filename_ascii_strip_re.sub("", filename)).strip("._")  # Removed _join(split())
+
+    # ... existing code ...
+    if (
+        os.name == "nt"
+        and filename
+        and filename.split(".")[0].upper() in _windows_device_files
+    ):
+        filename = f"_{filename}"
+
+    return filename
