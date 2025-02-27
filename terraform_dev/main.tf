@@ -71,7 +71,7 @@ locals {
   search_replica_count         = 1
   search_partition_count       = 1
   search_hosting_mode          = "default"
-  search_public_network_access = false # Change from current env, private endpoint only.
+  search_public_network_access = true
   search_top_k                 = 5
   search_strictness            = 3
   search_index_name            = "documentindex"
@@ -159,10 +159,10 @@ resource "azurerm_storage_account" "storage_account" {
   account_tier             = local.account_tier
   account_replication_type = local.account_replication_type
   min_tls_version          = local.min_tls_version
-  public_network_access_enabled = false
+  public_network_access_enabled = true
   # Network rules to link Storage Account to VNet
   network_rules {
-    default_action             = "Deny"
+    default_action             = "Allow"
   }
 }
 
@@ -174,7 +174,7 @@ resource "azurerm_cosmosdb_account" "cosmos_db" {
   offer_type                 = local.cosmos_offer_type
   kind                       = local.cosmos_kind
   analytical_storage_enabled = false
-  public_network_access_enabled = false
+  public_network_access_enabled = true
 
   consistency_policy {
     consistency_level       = local.cosmos_db_consistency_policy.default_consistency_level
@@ -331,6 +331,8 @@ resource "azurerm_search_service" "search_service" {
   identity {
     type = "SystemAssigned"
   }
+
+
   local_authentication_enabled = true
   authentication_failure_mode = "http401WithBearerChallenge"
   network_rule_bypass_option  = "AzureServices"
@@ -619,7 +621,7 @@ resource "azurerm_cognitive_account" "openai" {
   resource_group_name   = azurerm_resource_group.rg.name
   kind                  = "OpenAI"
   sku_name              = "S0"
-  public_network_access_enabled = false
+  public_network_access_enabled = true
   custom_subdomain_name = local.openai_name
 
   identity {
@@ -627,7 +629,7 @@ resource "azurerm_cognitive_account" "openai" {
   }
   network_acls {
     bypass = "AzureServices"
-    default_action = "Deny"
+    default_action = "Allow"
   }
 }
 
@@ -679,7 +681,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment_embeddings" {
   }
   model {
     format  = "OpenAI"
-    name    = "text-embedding-ada-002"
+    name    = local.openai_embedding_model_name
     version = "2"
   }
   version_upgrade_option = "OnceNewDefaultVersionAvailable"
@@ -705,6 +707,72 @@ resource "azurerm_role_assignment" "acr_pull_dev" {
   depends_on = [
     azurerm_linux_web_app.webappdev
   ]
-
 }
 
+
+
+resource "local_file" "secrets" {
+  filename = "${path.module}/.env"
+  content = <<-EOT
+# Metrics and telemetry
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+
+# Chat
+AUTH_ENABLED=False
+DEV_MODE=True
+DEBUG=True
+AZURE_OPENAI_RESOURCE=${azurerm_cognitive_account.openai.name}
+AZURE_OPENAI_MODEL=${azurerm_cognitive_deployment.openai_deployment_gpt4o.name}
+AZURE_OPENAI_KEY=${azurerm_cognitive_account.openai.primary_access_key}
+AZURE_OPENAI_MODEL_NAME=gpt-4o
+AZURE_OPENAI_TEMPERATURE=0
+AZURE_OPENAI_TOP_P=1.0
+AZURE_OPENAI_MAX_TOKENS=1500
+AZURE_OPENAI_STOP_SEQUENCE=
+AZURE_OPENAI_SYSTEM_MESSAGE=You are a digital assistant for a company called TPXimpact. When referring to our organization, always write "TPXimpact" as one word, using capital TPX and lowercase impact. Avoid using "TPX" or "TPX Impact" and never use "TPXImpact". Use British English and exclusively British (UK) English. Strictly follow UK spelling conventions (e.g., use 'colour' not 'color', 'realise' not 'realize'). Use UK vocabulary and phrases (e.g., 'flat' not 'apartment', 'lorry' not 'truck'). Apply UK formatting standards. Do not use American English spellings, terms, or formats under any circumstances
+AZURE_OPENAI_PREVIEW_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_STREAM=True
+AZURE_OPENAI_ENDPOINT=${azurerm_cognitive_account.openai.endpoint}
+AZURE_OPENAI_EMBEDDING_NAME=${azurerm_cognitive_deployment.openai_deployment_embeddings.name}
+AZURE_OPENAI_EMBEDDING_MODEL_NAME=${local.openai_embedding_model_name}
+AZURE_OPENAI_EMBEDDING_ENDPOINT=
+AZURE_OPENAI_EMBEDDING_KEY=
+
+
+# Chat history
+AZURE_COSMOSDB_DATABASE=db_conversation_history
+AZURE_COSMOSDB_CONVERSATIONS_CONTAINER=conversations
+AZURE_COSMOSDB_ACCOUNT=${azurerm_cosmosdb_account.cosmos_db.name}
+AZURE_COSMOSDB_ACCOUNT_KEY=${azurerm_cosmosdb_account.cosmos_db.primary_key}
+AZURE_COSMOSDB_ENABLE_FEEDBACK=False
+
+# Chat with data: common settings
+SEARCH_TOP_K=5
+SEARCH_STRICTNESS=2
+SEARCH_ENABLE_IN_DOMAIN=True
+# Store documents
+AZURE_STORAGE_ACCOUNT=${azurerm_storage_account.storage_account.name}
+AZURE_STORAGE_KEY=${azurerm_storage_account.storage_account.primary_access_key}
+STORE_FILES=
+
+# Chat with data: Azure AI Search
+AZURE_SEARCH_SERVICE=${azurerm_search_service.search_service.name}
+AZURE_SEARCH_KEY=${azurerm_search_service.search_service.primary_key}
+AZURE_SEARCH_INDEX=documentindex
+AZURE_SEARCH_SEMANTIC_SEARCH_CONFIG=
+AZURE_SEARCH_INDEX_IS_PRECHUNKED=True
+AZURE_SEARCH_TOP_K=5
+AZURE_SEARCH_ENABLE_IN_DOMAIN=True
+AZURE_SEARCH_CONTENT_COLUMNS=content
+AZURE_SEARCH_FILENAME_COLUMN=filename
+AZURE_SEARCH_TITLE_COLUMN=
+AZURE_SEARCH_URL_COLUMN=doc_url
+AZURE_SEARCH_VECTOR_COLUMNS=content_vector
+AZURE_SEARCH_QUERY_TYPE=vector
+AZURE_SEARCH_PERMITTED_GROUPS_COLUMN=
+AZURE_SEARCH_STRICTNESS=3
+EOT
+
+  # Make sure the file is only readable by the owner
+  file_permission = "0600"
+}

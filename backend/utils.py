@@ -7,6 +7,7 @@ import requests
 import dataclasses
 
 DEBUG = os.environ.get("DEBUG", "false")
+print(f"DEBUG: {DEBUG}")
 if DEBUG.lower() == "true":
     logging.basicConfig(level=logging.DEBUG)
 

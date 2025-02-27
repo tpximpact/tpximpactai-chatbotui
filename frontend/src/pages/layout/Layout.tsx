@@ -68,7 +68,7 @@ const Layout = () => {
     return (
         <div className={styles.layout}>
             {dev_mode && <div className={styles.devMode}>
-                <div className={styles.devModeText}>This is the development environemt. Please do not upload any sensitive data.</div>
+                <div className={styles.devModeText}>This is the development environment. Please do not upload any sensitive data.</div>
             </div>}
             <header className={styles.header} role={"banner"}>
                 <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
