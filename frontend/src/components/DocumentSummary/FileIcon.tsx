@@ -2,6 +2,7 @@ import React from 'react';
 import pdfIcon from '../../assets/pdf.png'
 import docxIcon from '../../assets/doc.png'
 import txtIcon from '../../assets/txt.png'
+import csvIcon from '../../assets/csv.png'
 import COLOURS from '../../constants/COLOURS';
 
 
@@ -42,6 +43,7 @@ const FileIcon: React.FC<FileIconProps> = ({ title, key, selected }) => {
     const extension = getFileExtension(title);
     const shortTitle = title.length > 26 ? title.slice(0, 23) + '...' : title;
 
+
     return (
         <div style={{
             display:'flex', 
@@ -57,7 +59,8 @@ const FileIcon: React.FC<FileIconProps> = ({ title, key, selected }) => {
                 style={{alignSelf:'center', textAlign:'center'}}
                 src={title.includes('.pdf') ?
                 pdfIcon : title.includes('.docx') ?
-                    docxIcon : txtIcon}
+                docxIcon : title.includes('.csv') ?
+                csvIcon : txtIcon}
                 alt={title}
                 key={key}
                 width={40}

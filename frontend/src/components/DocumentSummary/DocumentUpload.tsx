@@ -251,14 +251,16 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             console.log("errorMessage", errorMessage)
             setErrorMsg({
                 title: 'Invalid file type', 
-                subtitle: 'Only .pdf, .docx, and .txt files are supported.'
+                subtitle: 'Only .pdf, .docx, .txt and .csv files are supported.'
             });
             toggleErrorDialog();
         },
         accept: {
             'text/plain': ['.txt'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'application/pdf': ['.pdf'],},
+            'application/pdf': ['.pdf'],
+            'text/csv': ['.csv'],
+        },
         maxFiles: 10,
         multiple: true,
         noDragEventsBubbling: true,

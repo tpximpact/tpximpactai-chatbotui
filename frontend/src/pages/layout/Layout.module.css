@@ -117,15 +117,19 @@
     background-color: red;
     color: #FFFFFF;
     align-items: center;
-    font-family: 'DMSans-Regular', sans-serif;
+    text-align: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .devModeText {
+    width: 100%;
     font-style: normal;
-    font-weight: 600;
     font-size: 14px;
     line-height: 20px;
     display: flex;
+    justify-content: center;
     align-items: center;
+    text-align: center;
     color: #242424;
 }
