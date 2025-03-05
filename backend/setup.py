@@ -44,6 +44,8 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2t
 from langchain_core.documents import Document
 from langchain_community.vectorstores.azuresearch import AzureSearch
 from langchain_community.retrievers import AzureCognitiveSearchRetriever
+from langchain_community.document_loaders import UnstructuredExcelLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
 
 MONITORING_ENABLED = False
 if MONITORING_ENABLED:
@@ -580,6 +582,7 @@ def get_configured_data_source(user_id, filenames):
                     "strictness": int(AZURE_SEARCH_STRICTNESS) if AZURE_SEARCH_STRICTNESS else int(SEARCH_STRICTNESS)
                 }
             }
+
     elif DATASOURCE_TYPE == "AzureCosmosDB":
         query_type = "vector"
 
@@ -815,7 +818,7 @@ async def generate_title(conversation_messages):
 
 
 def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: str) -> List[Document]:
-    """Load a file (PDF or TXT) from Azure Storage Blob."""
+    """Load a file (PDF, TXT, DOCX, CSV, XLSX, XLS) from Azure Storage Blob."""
     print(f'Downloading file from Azure Blob Storage: {blob_name}')
     storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
     try:
@@ -847,6 +850,8 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 loader = TextLoader(file_path)
             elif blob_name.lower().endswith('.docx'):
                 loader = Docx2txtLoader(file_path)
+            elif blob_name.lower().endswith('.csv'):
+                loader = CSVLoader(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {blob_name}")
             
@@ -856,7 +861,7 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
             # Clean up the temporary file
             if os.path.exists(file_path):
                 os.remove(file_path)
-                
+
     except Exception as ex:
         print(f'ERROR DOWNLOADING FILE FROM AZURE BLOB STORAGE: {ex}')
         return 'error: ' + str(ex)

@@ -23,7 +23,6 @@ async def send_chat_request(request):
     try:
         azure_openai_client = init_openai_client()
         response = await azure_openai_client.chat.completions.create(**model_args)
-
     except Exception as e:
         print(f"Exception in send_chat_request {e}")
         logging.exception("Exception in send_chat_request")
