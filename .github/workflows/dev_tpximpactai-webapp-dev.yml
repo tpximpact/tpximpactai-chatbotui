@@ -22,9 +22,12 @@ jobs:
     - name: Log in to registry
       uses: docker/login-action@v2
       with:
-        registry: https://tpximpactaicontainerreg.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_449f168c7f9c4e1c8c5cf3d3d6336c41 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_9c8c9153b7f142a2927e3f6943433100 }}
+        # registry: https://tpximpactaicontainerreg.azurecr.io/
+        # username: ${{ secrets.AzureAppService_ContainerUsername_449f168c7f9c4e1c8c5cf3d3d6336c41 }}
+        # password: ${{ secrets.AzureAppService_ContainerPassword_9c8c9153b7f142a2927e3f6943433100 }}
+        registry: https://impactaidevrccontainerreg.azurecr.io/
+        username: ${{secrets.CONTAINER_REPO_RC_USERNAME}}
+        password: ${{secrets.CONTAINER_REPO_RC_PASSWORD}}
 
     - name: Push container image to registry
       uses: docker/build-push-action@v3
