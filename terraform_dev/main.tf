@@ -127,7 +127,8 @@ locals {
   openai_top_p          = 1
   openai_tempreture     = 0
   openai_system_message = "You are a digital assistant for a company called TPXimpact. When referring to our organization, always write \"TPXimpact\" as one word, using capital TPX and lowercase impact. Avoid using \"TPX\" or \"TPX Impact\" and never use \"TPXImpact\". Use British English and exclusively British (UK) English. Strictly follow UK spelling conventions (e.g., use ‘colour’ not ‘color’, ‘realise’ not ‘realize’). Use UK vocabulary and phrases (e.g., ‘flat’ not ‘apartment’, ‘lorry’ not ‘truck’). Apply UK formatting standards. Do not use American English spellings, terms, or formats under any circumstances"
-
+  azure_chunk_size = 50000
+  azure_summarise_size = 4000
   # OpenAI Embeddings
   openai_embedding_model_name = "text-embedding-ada-002"
 
@@ -415,6 +416,8 @@ resource "azurerm_linux_web_app" "webapp" {
     "AZURE_OPENAI_SYSTEM_MESSAGE"                     = local.openai_system_message
     "AZURE_OPENAI_TEMPERATURE"                        = local.openai_tempreture
     "AZURE_OPENAI_TOP_P"                              = local.openai_top_p
+    "AZURE_CHUNK_SIZE"                                = local.azure_chunk_size
+    "AZURE_SUMMARISE_SIZE"                            = local.azure_summarise_size
     "AZURE_SEARCH_SERVICE"                            = local.search_service_name
     "AZURE_SEARCH_INDEX"                              = local.search_index_name
     "AZURE_SEARCH_KEY"                                = azurerm_search_service.search_service.primary_key
@@ -491,6 +494,8 @@ resource "azurerm_linux_web_app" "webappdev" {
     "AZURE_OPENAI_SYSTEM_MESSAGE"                     = local.openai_system_message
     "AZURE_OPENAI_TEMPERATURE"                        = local.openai_tempreture
     "AZURE_OPENAI_TOP_P"                              = local.openai_top_p
+    "AZURE_CHUNK_SIZE"                                = local.azure_chunk_size
+    "AZURE_SUMMARISE_SIZE"                            = local.azure_summarise_size
     "AZURE_SEARCH_SERVICE"                            = local.search_service_name
     "AZURE_SEARCH_KEY"                                = azurerm_search_service.search_service.primary_key
     "AZURE_SEARCH_TOP_K"                              = local.search_top_k
