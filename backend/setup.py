@@ -93,8 +93,8 @@ AZURE_STORAGE_ACCOUNT = os.environ.get("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_KEY = os.environ.get("AZURE_STORAGE_KEY")
 
 # Chunk & Summarise Sizes
-AZURE_CHUNK_SIZE =  os.environ.get("AZURE_CHUNK_SIZE")
-AZURE_SUMMARISE_SIZE = os.environ.get("AZURE_SUMMARISE_SIZE")
+AZURE_CHUNK_SIZE = int(os.environ.get("AZURE_CHUNK_SIZE", 50000))
+AZURE_SUMMARISE_SIZE = int(os.environ.get("AZURE_SUMMARISE_SIZE", 8000))
 
 # ACS Integration Settings
 AZURE_SEARCH_SERVICE = os.environ.get("AZURE_SEARCH_SERVICE")
