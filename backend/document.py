@@ -4,7 +4,6 @@ from typing import Dict, List
 
 from quart import jsonify, request
 
-
 from backend.auth.auth_utils import get_authenticated_user_details
 
 import tiktoken
@@ -19,7 +18,7 @@ from azure.core.credentials import AzureNamedKeyCredential
 
 from langchain.schema import Document
 
-from backend.setup import AZURE_OPENAI_MODEL, AZURE_OPENAI_SYSTEM_MESSAGE, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY, get_doc_from_azure_blob_storage, init_container_client, init_openai_client, init_search_client, init_vector_store
+from backend.setup import AZURE_OPENAI_MODEL, AZURE_OPENAI_SYSTEM_MESSAGE, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY, get_doc_from_azure_blob_storage, init_container_client, init_openai_client, init_search_client, init_vector_store, AZURE_CHUNK_SIZE, AZURE_SUMMARISE_SIZE 
 from backend.utils import secure_filename
 
 def chunkString(text, chunk_size,overlap):
@@ -33,7 +32,6 @@ def chunkString(text, chunk_size,overlap):
     chunked_content_list = splitter.split_text(text)
 
     return chunked_content_list
-
 
 async def collect_documents_from_index(filenames, user_id):
     allDocsString = ""
@@ -92,7 +90,6 @@ def merge_chunks(chunks, overlap=200):
 
     return encoding.decode(merged_tokens)
 
-
 async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detailed summary of the following including all key concepts and takeaways, if it is a guide or a help piece make sure you include a summary of the main actionable steps:') -> str:
     azure_openai_client = init_openai_client(use_data=False)
     response = await azure_openai_client.chat.completions.create(
@@ -103,7 +100,6 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
         max_tokens=max_tokens
     )
     return response.choices[0].message.content
-
 
 async def handle_document_refinement(websocket, data):
     abort_flag = False
@@ -131,24 +127,17 @@ async def handle_document_refinement(websocket, data):
         print(f"Error collecting documents: {e}")
         return
 
-    chunks = chunkString(document, 3500, 100)
+    chunks = chunkString(document, AZURE_CHUNK_SIZE, 100)
     combined_summaries = ""
-    for chunk in chunks:
+    for index, chunk in enumerate(chunks):
         if abort_flag:
             return
-        index = chunks.index(chunk)
         if index == len(chunks) - 1:
             break
         await websocket.send(f"{chunks.index(chunk)+1}/{len(chunks)}")
-        combined_summaries = await summarize_chunk(combined_summaries + chunk, 4000)
-
-    
-
-    
+        combined_summaries = await summarize_chunk(combined_summaries + chunk, AZURE_SUMMARISE_SIZE)    
     final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
     await websocket.send(f"done:{final_prompt} {combined_summaries} {chunks[len(chunks)-1]}")
-
-
 
 async def documentsummary():
     encoding = tiktoken.get_encoding("cl100k_base")
@@ -168,11 +157,11 @@ async def documentsummary():
         prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
     
     try:
-        if num_tokens > 4000:
-            chunks = chunkString(docString, 4000, 100)
-            chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(4000/len(chunks))) for chunk in chunks])
+        if num_tokens > AZURE_CHUNK_SIZE:
+            chunks = chunkString(docString, AZURE_CHUNK_SIZE, 100)
+            chunk_summaries = await asyncio.gather(*[summarize_chunk(chunk, round(AZURE_CHUNK_SIZE/len(chunks))) for chunk in chunks])
             combined_summaries = " ".join(chunk_summaries)
-            final_prompt = f'I have a document that I have broken into chunks, the folliwng is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
+            final_prompt = f'I have a document that I have broken into chunks, the following is the summary of each chunk. Tell me in as much detail as possible what the document is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
         else:
             final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
             combined_summaries = docString
@@ -180,7 +169,6 @@ async def documentsummary():
     except Exception as e:
         print(f"Error reducing document: {e}")
         return jsonify({"error": f"Error reading document: {e}"}), 500
-
 
 async def handle_new_document(websocket, data):
     encoding = tiktoken.get_encoding("cl100k_base")
@@ -246,8 +234,6 @@ async def handle_new_document(websocket, data):
         return
     await websocket.send(f"done: Documents added to the search index")
 
-
-
 async def upload_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     storage_container_name = authenticated_user['user_principal_id']
@@ -308,7 +294,6 @@ async def upload_documents():
         print(f"Uploading Documents failed. Exception: {ex}")
         return jsonify({"error": f"Uploading Documents failed. Exception: {ex}"}, 500)
 
-
 async def get_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -346,7 +331,6 @@ async def get_documents():
         print(f"Failed to get documents. Exception: {ex}")
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
 
-
 async def delete_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     container_client = init_container_client(authenticated_user['user_principal_id'])
@@ -377,7 +361,6 @@ async def delete_documents():
     except Exception as ex:
         return jsonify({"error": f"Failed to delete documents. Exception: {ex}"}), 500
 
-
 def add_metadata_to_docs(docs: List[Document],user_id: str, file_name: str, doc_url: str) -> List[Dict]:
     texts = []
     metadatas = []
@@ -398,7 +381,6 @@ def add_metadata_to_docs(docs: List[Document],user_id: str, file_name: str, doc_
 
     return texts, metadatas
 
-
 def join_and_split_docs(docs):
     """
     Joins the pages into a single document and then splits it into chunks
@@ -407,10 +389,9 @@ def join_and_split_docs(docs):
     for doc in docs:
         joint_doc.page_content += doc.page_content if hasattr(doc, 'page_content') else doc.content
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=AZURE_CHUNK_SIZE, chunk_overlap=100)
     split_docs = text_splitter.split_documents([joint_doc])
     return split_docs
-
 
 async def ingest_all_docs_from_storage():
     storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"

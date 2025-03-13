@@ -20,9 +20,7 @@ from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
-
 import tiktoken
-
 
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
@@ -70,9 +68,6 @@ UI_CHAT_DESCRIPTION = os.environ.get("UI_CHAT_DESCRIPTION")
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
 
-
-
-
 # Dev mode
 DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
 
@@ -84,7 +79,6 @@ else:
     logging.basicConfig(level=logging.WARNING)  # Change from DEBUG to WARNING or INFO
 azure_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
 azure_logger.setLevel(logging.WARNING)  # or logging.ERROR for even less logging
-
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
@@ -98,6 +92,9 @@ SEARCH_ENABLE_IN_DOMAIN = os.environ.get("SEARCH_ENABLE_IN_DOMAIN", "true")
 AZURE_STORAGE_ACCOUNT = os.environ.get("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_KEY = os.environ.get("AZURE_STORAGE_KEY")
 
+# Chunk & Summarise Sizes
+AZURE_CHUNK_SIZE = int(os.environ.get("AZURE_CHUNK_SIZE", 50000))
+AZURE_SUMMARISE_SIZE = int(os.environ.get("AZURE_SUMMARISE_SIZE", 8000))
 
 # ACS Integration Settings
 AZURE_SEARCH_SERVICE = os.environ.get("AZURE_SEARCH_SERVICE")
@@ -199,7 +196,6 @@ AZURE_MLINDEX_TITLE_COLUMN = os.environ.get("AZURE_MLINDEX_TITLE_COLUMN")
 AZURE_MLINDEX_URL_COLUMN = os.environ.get("AZURE_MLINDEX_URL_COLUMN")
 AZURE_MLINDEX_VECTOR_COLUMNS = os.environ.get("AZURE_MLINDEX_VECTOR_COLUMNS")
 AZURE_MLINDEX_QUERY_TYPE = os.environ.get("AZURE_MLINDEX_QUERY_TYPE")
-
 
 # Frontend Settings via Environment Variables
 AUTH_ENABLED = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
