@@ -51,6 +51,7 @@ def create_app():
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
 
+
 @bp.route("/")
 async def index():
     return await render_template("index.html", title=UI_TITLE, favicon=UI_FAVICON)
@@ -66,11 +67,11 @@ async def assets(path):
 
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
-
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
     return await conversation_internal(request_json)
+
 
 @bp.route("/frontend_settings", methods=["GET"])
 def get_frontend_settings():
@@ -78,7 +79,7 @@ def get_frontend_settings():
         return jsonify(frontend_settings), 200
     except Exception as e:
         logging.exception("Exception in /frontend_settings")
-        return jsonify({"error": str(e)}), 500  
+        return jsonify({"error": str(e)}), 500
 
 @bp.route("/history/generate", methods=["POST"])
 async def history_generate():

@@ -135,8 +135,7 @@ async def handle_document_refinement(websocket, data):
         if index == len(chunks) - 1:
             break
         await websocket.send(f"{chunks.index(chunk)+1}/{len(chunks)}")
-        combined_summaries = await summarize_chunk(combined_summaries + chunk, AZURE_SUMMARISE_SIZE)
-    
+        combined_summaries = await summarize_chunk(combined_summaries + chunk, AZURE_SUMMARISE_SIZE)    
     final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
     await websocket.send(f"done:{final_prompt} {combined_summaries} {chunks[len(chunks)-1]}")
 
@@ -153,8 +152,10 @@ async def documentsummary():
     # await collect_documents_from_index(filenames, storage_container_name)
     docString = await collect_documents_from_index(filenames, storage_container_name)
     num_tokens = len(encoding.encode(docString))
+    
     if not prompt == '':
         prompt = 'In your answer adhere to the following instruction: ' + prompt + '. Here is the document: '
+    
     try:
         if num_tokens > AZURE_CHUNK_SIZE:
             chunks = chunkString(docString, AZURE_CHUNK_SIZE, 100)
