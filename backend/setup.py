@@ -43,6 +43,7 @@ from langchain_core.documents import Document
 from langchain_community.vectorstores.azuresearch import AzureSearch
 from langchain_community.retrievers import AzureCognitiveSearchRetriever
 from langchain_community.document_loaders.csv_loader import CSVLoader
+from scripts.xlsx_loader import CustomExcelLoader
 
 
 MONITORING_ENABLED = False
@@ -849,8 +850,10 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 loader = Docx2txtLoader(file_path)
             elif blob_name.lower().endswith('.csv'):
                 loader = CSVLoader(file_path)
-            # elif blob_name.lower().endswith('.xlsx'):
-            #     loader = UnstructuredExcelLoader(file_path)
+            elif blob_name.lower().endswith('.xlsx'):
+                logging.info(f"Loading Excel file--------------------------------: {file_path}")
+                print(f"Loading Excel file--------------------------------: {file_path}")
+                loader = CustomExcelLoader(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {blob_name}")
             
