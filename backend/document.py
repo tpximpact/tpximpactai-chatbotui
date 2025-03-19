@@ -257,7 +257,7 @@ async def upload_documents():
             if not sanitized_filename or '..' in sanitized_filename or '/' in sanitized_filename or '\\' in sanitized_filename:
                 return jsonify({"error": f"Invalid filename: {original_filename}"}), 400
                 
-            allowed_extensions = {'.pdf', '.docx', '.txt', '.csv'}
+            allowed_extensions = {'.pdf', '.docx', '.txt', '.csv', 'xlsx'}
             if not any(sanitized_filename.lower().endswith(ext) for ext in allowed_extensions):
                 return jsonify({"error": f"Unsupported file type: {original_filename}"}), 400
             
