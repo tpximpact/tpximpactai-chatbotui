@@ -1,7 +1,6 @@
 import logging
 import uuid
 
-
 from quart import (
     jsonify,
     make_response,
@@ -10,13 +9,15 @@ from quart import (
 
 from backend.auth.auth_utils import get_authenticated_user_details
 from azure.monitor.events.extension import track_event
-from azure.search.documents.indexes.models import *
+
+# This import is not being used.
+#from azure.search.documents.indexes.models import *
 
 from backend.setup import MONITORING_ENABLED, SHOULD_STREAM, generate_title, init_cosmosdb_client, init_cosmosdb_logs_client, init_openai_client, prepare_model_args
 from backend.utils import format_as_ndjson, format_stream_response, format_non_streaming_response
 
-
-
+# The function below sends a chat request to the OpenAI API.
+# It prepares the model arguments and sends the request to the OpenAI API.
 async def send_chat_request(request):
     model_args = prepare_model_args(request)
     print(f"MODEL ARGS: {model_args}")
@@ -30,12 +31,14 @@ async def send_chat_request(request):
 
     return response
 
+# The function below handles the conversation request from the user.
 async def complete_chat_request(request_body):
     response = await send_chat_request(request_body)
     history_metadata = request_body.get("history_metadata", {})
 
     return format_non_streaming_response(response, history_metadata)
 
+# The function below handles the stream conversation request from the user.
 async def stream_chat_request(request_body):
     response = await send_chat_request(request_body)
     
@@ -48,6 +51,7 @@ async def stream_chat_request(request_body):
 
     return generate()
 
+# The function below handles the conversation request from the user.
 async def conversation_internal(request_body):
     try:
         if SHOULD_STREAM:
@@ -68,10 +72,8 @@ async def conversation_internal(request_body):
         else:
             return jsonify({"error": str(ex)}), 500
 
-
-
-
-
+# The function below adds a conversation to the CosmosDB database.
+# It retrieves the conversation ID from the request body, validates it, and adds the conversation to the database.
 async def add_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -99,8 +101,6 @@ async def add_conversation():
             logs_dict = await cosmos_logs_client.create_log_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
             history_metadata['title'] = title
             history_metadata['date'] = conversation_dict['createdAt']
-
-
 
         ## Format the incoming message object in the "chat/completions" messages format
         ## then write it to the conversation history in cosmos and logs
@@ -143,6 +143,8 @@ async def add_conversation():
         logging.exception("Exception in /history/generate")
         return jsonify({"error": str(e)}), 500
 
+# The function below updates the conversation history in CosmosDB with the latest messages.
+# It retrieves the conversation ID and messages from the request body, validates them, and updates the conversation history in the database.
 async def update_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -215,7 +217,9 @@ async def update_conversation():
         logging.exception("Exception in /history/update")
         return jsonify({"error": str(e)}), 500
 
-
+# The function below updates the feedback for a specific message in CosmosDB.
+# It retrieves the message ID and feedback from the request body, validates them and updates the feedback for the specified message in the database.
+# If the update is successful, it returns a success response; otherwise, it returns an error.
 async def update_message():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -243,8 +247,7 @@ async def update_message():
         logging.exception("Exception in /history/message_feedback")
         return jsonify({"error": str(e)}), 500
 
-
-
+# The function below deletes a conversation and its messages when specified by the user.
 async def delete_conversation():
 
     ## get the user id from the request headers
@@ -279,7 +282,7 @@ async def delete_conversation():
         logging.exception("Exception in /history/delete")
         return jsonify({"error": str(e)}), 500
 
-
+# The function below lists all conversations for a user.
 async def list_conversations():
     offset = request.args.get("offset", 0)
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
@@ -300,7 +303,7 @@ async def list_conversations():
 
     return jsonify(conversations), 200
 
-
+# The function below gets a conversation from the user and its messages by doing a lookup in CosmosDB and returning the messages in the bot frontend format.
 async def get_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -342,8 +345,7 @@ async def get_conversation():
     await cosmos_conversation_client.cosmosdb_client.close()
     return jsonify({"conversation_id": conversation_id, "messages": messages}), 200
 
-
-
+# The function below renames a conversation.
 async def rename_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -375,7 +377,7 @@ async def rename_conversation():
     await cosmos_conversation_client.cosmosdb_client.close()
     return jsonify(updated_conversation), 200
 
-
+# The function below deletes all conversations for a user.
 async def delete_all_conversations():
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
@@ -406,7 +408,7 @@ async def delete_all_conversations():
         logging.exception("Exception in /history/delete_all")
         return jsonify({"error": str(e)}), 500
 
-
+# The function below clears all messages in a conversation.
 async def clear_messages():
     ## get the user id from the request headers
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)

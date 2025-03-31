@@ -4,10 +4,13 @@ import os
 import random
 import re
 import logging
-import shutil
+
+#import shutil
+
 import tempfile
 from typing import List
-from dotenv import load_dotenv
+
+#from dotenv import load_dotenv
 
 from langchain_openai import AzureOpenAIEmbeddings
 from quart import (
@@ -24,29 +27,40 @@ import tiktoken
 
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
-from azure.storage.blob.aio import BlobClient as AsyncBlobClient
+
+#from azure.storage.blob.aio import BlobClient as AsyncBlobClient
+
 from azure.storage.blob import BlobClient
 
 from azure.search.documents import SearchClient
-from azure.search.documents.indexes import SearchIndexClient
+
+#from azure.search.documents.indexes import SearchIndexClient
+
 from azure.search.documents.indexes.models import *
 
 from backend.utils import generateFilterString, generateSimpleFilterString, parse_multi_columns
-from opentelemetry.trace import SpanKind
+#from opentelemetry.trace import SpanKind
+
 from opentelemetry import trace
 from opentelemetry import metrics
 from azure.monitor.opentelemetry import configure_azure_monitor
-from azure.monitor.events.extension import track_event
+
+#from azure.monitor.events.extension import track_event
 
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 from langchain_core.documents import Document
 from langchain_community.vectorstores.azuresearch import AzureSearch
-from langchain_community.retrievers import AzureCognitiveSearchRetriever
+
+#from langchain_community.retrievers import AzureCognitiveSearchRetriever
+
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from scripts.xlsx_loader import CustomExcelLoader
 
+# Dev mode
+DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
 
-MONITORING_ENABLED = False
+# Do we still need to keep this debugging code? It is also used in conversation.py if set to true.
+MONITORING_ENABLED = not DEV_MODE
 if MONITORING_ENABLED:
     configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
     tracer = trace.get_tracer(__name__)
@@ -69,8 +83,7 @@ UI_CHAT_DESCRIPTION = os.environ.get("UI_CHAT_DESCRIPTION")
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
 
-# Dev mode
-DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
+
 
 # Debug settings
 DEBUG = os.environ.get("DEBUG", "false")
@@ -314,8 +327,6 @@ def init_embed_model():
         embeddings = None
         raise e
 
-
-
 def init_cosmosdb_client():
     logging.debug("Initializing CosmosDB client")
     cosmos_conversation_client = None
@@ -495,7 +506,7 @@ def init_vector_store():
         print(f"Exception in vector store initialization", ex)
         raise ex
 
-
+# This function below is to ensure that the CosmosDB is configured and working.
 async def ensure_cosmos():
     if not AZURE_COSMOSDB_ACCOUNT:
         return jsonify({"error": "CosmosDB is not configured"}), 404

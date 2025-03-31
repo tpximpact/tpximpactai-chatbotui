@@ -12,15 +12,29 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from azure.storage.blob import BlobServiceClient
 from azure.search.documents.indexes.models import *
-from azure.core.credentials import AzureNamedKey
-from azure.core.credentials import AzureNamedKeyCredential
 
+# These imports are not in use. They are imported from the Azure SDK for Python, but not used in this file.
+# from azure.core.credentials import AzureNamedKey
+# from azure.core.credentials import AzureNamedKeyCredential
 
 from langchain.schema import Document
 
-from backend.setup import AZURE_OPENAI_MODEL, AZURE_OPENAI_SYSTEM_MESSAGE, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY, get_doc_from_azure_blob_storage, init_container_client, init_openai_client, init_search_client, init_vector_store, AZURE_CHUNK_SIZE, AZURE_SUMMARISE_SIZE 
+from backend.setup import (
+    AZURE_OPENAI_MODEL, 
+    AZURE_OPENAI_SYSTEM_MESSAGE, 
+    AZURE_STORAGE_ACCOUNT,
+    AZURE_STORAGE_KEY, 
+    get_doc_from_azure_blob_storage, 
+    init_container_client, 
+    init_openai_client, 
+    init_search_client, 
+    init_vector_store, 
+    AZURE_CHUNK_SIZE, 
+    AZURE_SUMMARISE_SIZE 
+)
 from backend.utils import secure_filename
 
+# The function below functions by splitting the text into chunks then returning the chunks list.
 def chunkString(text, chunk_size,overlap):
     SENTENCE_ENDINGS = [".", "!", "?"]
     WORDS_BREAKS = list(reversed([",", ";", ":", " ", "(", ")", "[", "]", "{", "}", "\t", "\n"]))
@@ -33,6 +47,7 @@ def chunkString(text, chunk_size,overlap):
 
     return chunked_content_list
 
+# The function below functions by collecting the documents from the search index.
 async def collect_documents_from_index(filenames, user_id):
     allDocsString = ""
     for filename in filenames:
@@ -59,6 +74,7 @@ async def collect_documents_from_index(filenames, user_id):
             raise e
     return allDocsString
 
+# The function below merges the chunks of the documents.
 def merge_chunks(chunks, overlap=200):
     window_size = 10
     merged_tokens = []
@@ -101,6 +117,7 @@ async def summarize_chunk(chunk: str, max_tokens: int, prompt = 'Produce a detai
     )
     return response.choices[0].message.content
 
+# The function below functions by refining the documents and returning the refined documents.
 async def handle_document_refinement(websocket, data):
     abort_flag = False
 
@@ -139,6 +156,7 @@ async def handle_document_refinement(websocket, data):
     final_prompt = f'Tell me in as much detail as possible what the following document(s) is about. Make sure your answer includes the concepts, themes, priciples and methods that are covered. {prompt}'
     await websocket.send(f"done:{final_prompt} {combined_summaries} {chunks[len(chunks)-1]}")
 
+# The function below functions by summarizing the documents and returning the summary.
 async def documentsummary():
     encoding = tiktoken.get_encoding("cl100k_base")
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
@@ -170,6 +188,7 @@ async def documentsummary():
         print(f"Error reducing document: {e}")
         return jsonify({"error": f"Error reading document: {e}"}), 500
 
+# The function below functions by processing the documents and adding them to the search index.
 async def handle_new_document(websocket, data):
     encoding = tiktoken.get_encoding("cl100k_base")
     abort_flag = False
@@ -234,6 +253,7 @@ async def handle_new_document(websocket, data):
         return
     await websocket.send(f"done: Documents added to the search index")
 
+# The function below functions by uploading the documents to the storage account.
 async def upload_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     storage_container_name = authenticated_user['user_principal_id']
@@ -294,6 +314,7 @@ async def upload_documents():
         print(f"Uploading Documents failed. Exception: {ex}")
         return jsonify({"error": f"Uploading Documents failed. Exception: {ex}"}, 500)
 
+# The function below functions by retrieving the documents from the storage account and returning the filenames and the number of tokens in each document.
 async def get_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
@@ -331,6 +352,7 @@ async def get_documents():
         print(f"Failed to get documents. Exception: {ex}")
         return jsonify({"error": f"Failed to get documents. Exception: {ex}"}), 500
 
+# This fuction deletes the documents from the storage account and the search index.
 async def delete_documents():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     container_client = init_container_client(authenticated_user['user_principal_id'])
@@ -361,6 +383,7 @@ async def delete_documents():
     except Exception as ex:
         return jsonify({"error": f"Failed to delete documents. Exception: {ex}"}), 500
 
+# This function retrieves the user id of the authenticated user and adds it to the metadata of the documents.
 def add_metadata_to_docs(docs: List[Document],user_id: str, file_name: str, doc_url: str) -> List[Dict]:
     texts = []
     metadatas = []
@@ -381,6 +404,7 @@ def add_metadata_to_docs(docs: List[Document],user_id: str, file_name: str, doc_
 
     return texts, metadatas
 
+# This function joins the pages into a single document and then splits it into chunks.
 def join_and_split_docs(docs):
     """
     Joins the pages into a single document and then splits it into chunks
@@ -393,6 +417,8 @@ def join_and_split_docs(docs):
     split_docs = text_splitter.split_documents([joint_doc])
     return split_docs
 
+# It is a function that ingests all documents from storage into the search index.
+# This is a recovery function - Only used when we need to reset the index and repopulate it with all the documents from storage.
 async def ingest_all_docs_from_storage():
     storage_account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/"
 

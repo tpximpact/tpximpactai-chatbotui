@@ -12,17 +12,35 @@ from quart import (
     send_from_directory,
     render_template
 )
+
 LOCAL_DEV = os.getenv("LOCAL_DEV", "True")
 if LOCAL_DEV == 'True':
     print("Loading local dev env")
     load_dotenv(override=True)
 
 from backend.auth.auth_utils import get_authenticated_user_details
-from backend.conversation import clear_messages, conversation_internal, delete_all_conversations, delete_conversation, get_conversation, list_conversations, rename_conversation, update_conversation, update_message, add_conversation
-from backend.document import delete_documents, documentsummary, get_documents, handle_document_refinement, handle_new_document, ingest_all_docs_from_storage, upload_documents
+from backend.conversation import (
+    clear_messages, 
+    conversation_internal, 
+    delete_all_conversations, 
+    delete_conversation, 
+    get_conversation, 
+    list_conversations, 
+    rename_conversation, 
+    update_conversation, 
+    update_message, 
+    add_conversation
+)
+from backend.document import (
+    delete_documents, 
+    documentsummary, 
+    get_documents, 
+    handle_document_refinement, 
+    handle_new_document, 
+    #ingest_all_docs_from_storage, 
+    upload_documents
+)
 from backend.setup import UI_FAVICON, UI_TITLE, ensure_cosmos, frontend_settings
-
-
 
 def create_app():
     app = Quart(__name__)
@@ -50,8 +68,6 @@ def create_app():
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
-
-
 @bp.route("/")
 async def index():
     return await render_template("index.html", title=UI_TITLE, favicon=UI_FAVICON)
@@ -64,14 +80,12 @@ async def favicon():
 async def assets(path):
     return await send_from_directory("static/assets", path)
 
-
 @bp.route("/conversation", methods=["POST"])
 async def conversation():
     if not request.is_json:
         return jsonify({"error": "request must be json"}), 415
     request_json = await request.get_json()
     return await conversation_internal(request_json)
-
 
 @bp.route("/frontend_settings", methods=["GET"])
 def get_frontend_settings():
