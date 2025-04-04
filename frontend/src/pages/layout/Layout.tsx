@@ -23,6 +23,10 @@ const Layout = () => {
         appStateContext?.openUseCases();
     };
 
+    const handleFeedbackClick = () => {
+        window.open("https://docs.google.com/forms/d/e/1FAIpQLScf1OQVNj9_gkqcsMGUVR1motXBen21PuVPuTbKTqST9vQojA/viewform", "_blank");
+    };
+
     const handleSharePanelDismiss = () => {
         setIsSharePanelOpen(false);
         setCopyClicked(false);
@@ -83,6 +87,7 @@ const Layout = () => {
                         </Link>
                     </Stack>
                     <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
+                    <ShareButton onClick={handleFeedbackClick} text={"Feedback"} />
                     <ShareButton onClick={handleUseCasesClick} text={useCaseLabel} />
                     </Stack>
                 </Stack>

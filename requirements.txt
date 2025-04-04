@@ -21,3 +21,4 @@ langchain-openai==0.1.25
 langchain-text-splitters==0.2.4
 docx2txt
 pypdf
+openpyxl
