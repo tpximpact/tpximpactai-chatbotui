@@ -3,7 +3,7 @@ import styles from "./Layout.module.css";
 import { CopyRegular } from "@fluentui/react-icons";
 import { Dialog, Stack, TextField } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
-import { ShareButton } from "../../components/common/Button";
+import { ColouredButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
 import PrimaryWhiteLogo from  "../../assets/Primary white logo.png";
 
@@ -86,9 +86,9 @@ const Layout = () => {
                             <h1 className={styles.headerTitle}>{ui?.title}</h1>
                         </Link>
                     </Stack>
-                    <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
-                    <ShareButton onClick={handleFeedbackClick} text={"Feedback"} />
-                    <ShareButton onClick={handleUseCasesClick} text={useCaseLabel} />
+                    <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.colouredButtonContainer}>
+                    <ColouredButton onClick={handleFeedbackClick} text={"Feedback"} color="green" />
+                    <ColouredButton onClick={handleUseCasesClick} text={useCaseLabel} />
                     </Stack>
                 </Stack>
             </header>

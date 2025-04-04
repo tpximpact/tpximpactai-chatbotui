@@ -40,18 +40,18 @@
     margin-left: 36px;
 }
 
-.shareButtonContainer {
+.colouredButtonContainer {
     display: flex;
     flex-direction: row;
     justify-content: center;
     margin-right: 20px;
 }
 
-.shareButton {
+.colouredButton {
     color: #FFFFFF;
 }
 
-.shareButtonText {
+.colouredButtonText {
     font-style: normal;
     font-weight: 600;
     font-size: 14px;

@@ -19,7 +19,7 @@ function getRandomColor(): string {
 }
 
 
-export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple', disabled }) => {
+export const ColouredButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purple', disabled }) => {
   const colorStyles: Record<Color, string> = {
     purple: styles.purple,
     blue: styles.blue,
@@ -31,7 +31,7 @@ export const ShareButton: React.FC<ButtonProps> = ({ onClick, text, color= 'purp
   const buttonStyle = colorStyles[color];
   return (
     <CommandBarButton
-      className={[styles.shareButtonRoot, buttonStyle, disabledStyle].join(' ')}
+      className={[styles.colouredButtonRoot, buttonStyle, disabledStyle].join(' ')}
       onClick={disabled ? undefined : onClick}
       text={text}
     />
