@@ -20,9 +20,7 @@ from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
-
 import tiktoken
-
 
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
@@ -44,8 +42,9 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2t
 from langchain_core.documents import Document
 from langchain_community.vectorstores.azuresearch import AzureSearch
 from langchain_community.retrievers import AzureCognitiveSearchRetriever
-from langchain_community.document_loaders import UnstructuredExcelLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
+from scripts.xlsx_loader import CustomExcelLoader
+
 
 MONITORING_ENABLED = False
 if MONITORING_ENABLED:
@@ -70,9 +69,6 @@ UI_CHAT_DESCRIPTION = os.environ.get("UI_CHAT_DESCRIPTION")
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
 
-
-
-
 # Dev mode
 DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
 
@@ -84,7 +80,6 @@ else:
     logging.basicConfig(level=logging.WARNING)  # Change from DEBUG to WARNING or INFO
 azure_logger = logging.getLogger('azure.core.pipeline.policies.http_logging_policy')
 azure_logger.setLevel(logging.WARNING)  # or logging.ERROR for even less logging
-
 
 USER_AGENT = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
@@ -98,6 +93,9 @@ SEARCH_ENABLE_IN_DOMAIN = os.environ.get("SEARCH_ENABLE_IN_DOMAIN", "true")
 AZURE_STORAGE_ACCOUNT = os.environ.get("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_KEY = os.environ.get("AZURE_STORAGE_KEY")
 
+# Chunk & Summarise Sizes
+AZURE_CHUNK_SIZE = int(os.environ.get("AZURE_CHUNK_SIZE", 50000))
+AZURE_SUMMARISE_SIZE = int(os.environ.get("AZURE_SUMMARISE_SIZE", 8000))
 
 # ACS Integration Settings
 AZURE_SEARCH_SERVICE = os.environ.get("AZURE_SEARCH_SERVICE")
@@ -133,6 +131,7 @@ AZURE_OPENAI_EMBEDDING_ENDPOINT = os.environ.get("AZURE_OPENAI_EMBEDDING_ENDPOIN
 AZURE_OPENAI_EMBEDDING_KEY = os.environ.get("AZURE_OPENAI_EMBEDDING_KEY")
 AZURE_OPENAI_EMBEDDING_NAME = os.environ.get("AZURE_OPENAI_EMBEDDING_NAME", "")
 AZURE_OPENAI_EMBEDDING_MODEL_NAME = os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL_NAME")
+
 
 # CosmosDB Mongo vcore vector db Settings
 AZURE_COSMOSDB_MONGO_VCORE_CONNECTION_STRING = os.environ.get("AZURE_COSMOSDB_MONGO_VCORE_CONNECTION_STRING")  #This has to be secure string
@@ -198,7 +197,6 @@ AZURE_MLINDEX_TITLE_COLUMN = os.environ.get("AZURE_MLINDEX_TITLE_COLUMN")
 AZURE_MLINDEX_URL_COLUMN = os.environ.get("AZURE_MLINDEX_URL_COLUMN")
 AZURE_MLINDEX_VECTOR_COLUMNS = os.environ.get("AZURE_MLINDEX_VECTOR_COLUMNS")
 AZURE_MLINDEX_QUERY_TYPE = os.environ.get("AZURE_MLINDEX_QUERY_TYPE")
-
 
 # Frontend Settings via Environment Variables
 AUTH_ENABLED = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
@@ -332,7 +330,7 @@ def init_cosmosdb_client():
                 credential = AZURE_COSMOSDB_ACCOUNT_KEY
 
             cosmos_conversation_client = CosmosConversationClient(
-                cosmosdb_endpoint=cosmos_endpoint, 
+                cosmosdb_endpoint=cosmos_endpoint,
                 credential=credential, 
                 database_name=AZURE_COSMOSDB_DATABASE,
                 container_name=AZURE_COSMOSDB_CONVERSATIONS_CONTAINER,
@@ -852,6 +850,10 @@ def get_doc_from_azure_blob_storage(blob_name: str, storage_account_container: s
                 loader = Docx2txtLoader(file_path)
             elif blob_name.lower().endswith('.csv'):
                 loader = CSVLoader(file_path)
+            elif blob_name.lower().endswith('.xlsx'):
+                logging.info(f"Loading Excel file--------------------------------: {file_path}")
+                print(f"Loading Excel file--------------------------------: {file_path}")
+                loader = CustomExcelLoader(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {blob_name}")
             

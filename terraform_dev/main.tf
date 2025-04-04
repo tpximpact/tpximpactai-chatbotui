@@ -12,16 +12,16 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = "56253cd5-a450-495e-8137-d0a5195d5bb0"
+  subscription_id = "94e31be9-876f-4122-b44f-f32b3a8198fd"
 }
 
 
 
 locals {
   # Resource Group settings
-  resource_group_name = "IAC-TPX-IMPACTAI-DEV-TFTEST"
+  resource_group_name = "rg-impactai-dev"
   location            = "UK South"
-  prefix    = "impactaidev"
+  prefix    = "impactaidevrc"
 
   # Network settings
   vnet_address_space = ["10.0.0.0/16"]
@@ -109,8 +109,8 @@ locals {
   }
   app_use_MI = true
 
-  acr_name     = "tpximpactaicontainerreg"
-  acr_resource_group = "IAC-TPX-IMPACTAI-DEV"
+  acr_name     = "${local.prefix}containerreg"
+  acr_resource_group = "rg-impactai-dev"
 
   # Web App Deployment
   webapp_registry_url = "https://${local.acr_name}.azurecr.io"
@@ -120,14 +120,15 @@ locals {
 
 
   # OpenAI
-  openai_name           = "${local.prefix}-openai"
+  openai_name           = "${local.prefix}-openai1"
   openai_model          = "gpt-4o"
   openai_api_version    = "2024-05-13"
   openai_api_preview_version = "2024-02-15-preview"
   openai_top_p          = 1
   openai_tempreture     = 0
   openai_system_message = "You are a digital assistant for a company called TPXimpact. When referring to our organization, always write \"TPXimpact\" as one word, using capital TPX and lowercase impact. Avoid using \"TPX\" or \"TPX Impact\" and never use \"TPXImpact\". Use British English and exclusively British (UK) English. Strictly follow UK spelling conventions (e.g., use ‘colour’ not ‘color’, ‘realise’ not ‘realize’). Use UK vocabulary and phrases (e.g., ‘flat’ not ‘apartment’, ‘lorry’ not ‘truck’). Apply UK formatting standards. Do not use American English spellings, terms, or formats under any circumstances"
-
+  azure_chunk_size = 50000
+  azure_summarise_size = 4000
   # OpenAI Embeddings
   openai_embedding_model_name = "text-embedding-ada-002"
 
@@ -138,23 +139,24 @@ locals {
 
 }
 
-data "azurerm_container_registry" "acr" {
+
+data "azurerm_resource_group" "rg" {
+  name     = local.resource_group_name
+}
+
+
+resource "azurerm_container_registry" "acr" {
   name                = local.acr_name
   resource_group_name = local.acr_resource_group
+  location            = local.location
+  sku                 = "Basic"
 }
-
-
-resource "azurerm_resource_group" "rg" {
-  name     = local.resource_group_name
-  location = local.location
-}
-
 
 
 # Configure Storage Account
 resource "azurerm_storage_account" "storage_account" {
   name                     = local.storage_account_name
-  resource_group_name      = azurerm_resource_group.rg.name
+  resource_group_name      = data.azurerm_resource_group.rg.name
   location                 = local.location
   account_tier             = local.account_tier
   account_replication_type = local.account_replication_type
@@ -200,13 +202,13 @@ resource "azurerm_cosmosdb_account" "cosmos_db" {
 
 resource "azurerm_cosmosdb_sql_database" "sql_db" {
   name                = local.cosmos_sql_db_name
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   account_name        = azurerm_cosmosdb_account.cosmos_db.name
 }
 
 resource "azurerm_cosmosdb_sql_container" "sql_conversations" {
   name                  = local.cosmos_sql_conversations_container_name
-  resource_group_name   = azurerm_resource_group.rg.name
+  resource_group_name   = data.azurerm_resource_group.rg.name
   account_name          = azurerm_cosmosdb_account.cosmos_db.name
   database_name         = azurerm_cosmosdb_sql_database.sql_db.name
   partition_key_paths   = ["/userId"]
@@ -224,7 +226,7 @@ resource "azurerm_cosmosdb_sql_container" "sql_conversations" {
 }
 resource "azurerm_cosmosdb_sql_container" "sql_logs" {
   name                  = local.cosmos_sql_logs_container_name
-  resource_group_name   = azurerm_resource_group.rg.name
+  resource_group_name   = data.azurerm_resource_group.rg.name
   account_name          = azurerm_cosmosdb_account.cosmos_db.name
   database_name         = azurerm_cosmosdb_sql_database.sql_db.name
   partition_key_paths   = ["/userId"]
@@ -242,7 +244,7 @@ resource "azurerm_cosmosdb_sql_container" "sql_logs" {
 }
 resource "azurerm_cosmosdb_sql_container" "sql_metadata" {
   name                  = local.cosmos_sql_metadata_container_name
-  resource_group_name   = azurerm_resource_group.rg.name
+  resource_group_name   = data.azurerm_resource_group.rg.name
   account_name          = azurerm_cosmosdb_account.cosmos_db.name
   database_name         = azurerm_cosmosdb_sql_database.sql_db.name
   partition_key_paths   = ["/userId"]
@@ -337,7 +339,7 @@ resource "azurerm_search_service" "search_service" {
   authentication_failure_mode = "http401WithBearerChallenge"
   network_rule_bypass_option  = "AzureServices"
   depends_on = [
-    azurerm_resource_group.rg
+    data.azurerm_resource_group.rg
   ]
 }
 
@@ -359,8 +361,8 @@ resource "random_password" "webappdev_scm_password" {
 # App Service Plan
 resource "azurerm_service_plan" "app_plan" {
   name                = local.app_sp_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
   sku_name            = local.sku
   os_type             = local.os_type
 }
@@ -370,7 +372,7 @@ resource "azurerm_service_plan" "app_plan" {
 resource "azurerm_linux_web_app" "webapp" {
   name                = local.app_name
   location            = local.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   service_plan_id     = azurerm_service_plan.app_plan.id
   https_only          = local.https_only
 
@@ -414,6 +416,8 @@ resource "azurerm_linux_web_app" "webapp" {
     "AZURE_OPENAI_SYSTEM_MESSAGE"                     = local.openai_system_message
     "AZURE_OPENAI_TEMPERATURE"                        = local.openai_tempreture
     "AZURE_OPENAI_TOP_P"                              = local.openai_top_p
+    "AZURE_CHUNK_SIZE"                                = local.azure_chunk_size
+    "AZURE_SUMMARISE_SIZE"                            = local.azure_summarise_size
     "AZURE_SEARCH_SERVICE"                            = local.search_service_name
     "AZURE_SEARCH_INDEX"                              = local.search_index_name
     "AZURE_SEARCH_KEY"                                = azurerm_search_service.search_service.primary_key
@@ -448,7 +452,7 @@ resource "azurerm_linux_web_app" "webapp" {
 resource "azurerm_linux_web_app" "webappdev" {
   name                = "${local.app_name}-dev"
   location            = local.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   service_plan_id     = azurerm_service_plan.app_plan.id
   https_only          = local.https_only
 
@@ -457,7 +461,7 @@ resource "azurerm_linux_web_app" "webappdev" {
       docker_image_name        = "${local.webapp_dev_image_name}:latest"
       docker_registry_url      = local.webapp_registry_url
       docker_registry_username = local.acr_name
-      docker_registry_password = data.azurerm_container_registry.acr.admin_password
+      docker_registry_password = azurerm_container_registry.acr.admin_password
     }
     websockets_enabled                      = true
     always_on                               = local.always_on
@@ -490,6 +494,8 @@ resource "azurerm_linux_web_app" "webappdev" {
     "AZURE_OPENAI_SYSTEM_MESSAGE"                     = local.openai_system_message
     "AZURE_OPENAI_TEMPERATURE"                        = local.openai_tempreture
     "AZURE_OPENAI_TOP_P"                              = local.openai_top_p
+    "AZURE_CHUNK_SIZE"                                = local.azure_chunk_size
+    "AZURE_SUMMARISE_SIZE"                            = local.azure_summarise_size
     "AZURE_SEARCH_SERVICE"                            = local.search_service_name
     "AZURE_SEARCH_KEY"                                = azurerm_search_service.search_service.primary_key
     "AZURE_SEARCH_TOP_K"                              = local.search_top_k
@@ -586,7 +592,7 @@ resource "azurerm_role_assignment" "cosmod_db_azure_contributor_dev" {
 
 # Cosmos DB SQL Role Assignment - Webapp
 resource "azurerm_cosmosdb_sql_role_assignment" "cosmosdb_role_assignment_1" {
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   account_name        = local.cosmos_account_name
   role_definition_id  = data.azurerm_cosmosdb_sql_role_definition.cosmosdb_contributor_role.id
   principal_id        = azurerm_linux_web_app.webapp.identity[0].principal_id
@@ -600,7 +606,7 @@ resource "azurerm_cosmosdb_sql_role_assignment" "cosmosdb_role_assignment_1" {
 
 # Cosmos DB SQL Role Assignment - Webapp Dev
 resource "azurerm_cosmosdb_sql_role_assignment" "cosmosdb_role_assignment_2" {
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = data.azurerm_resource_group.rg.name
   account_name        = local.cosmos_account_name
   role_definition_id  = data.azurerm_cosmosdb_sql_role_definition.cosmosdb_contributor_role.id
   principal_id        = azurerm_linux_web_app.webappdev.identity[0].principal_id
@@ -618,7 +624,7 @@ resource "azurerm_cosmosdb_sql_role_assignment" "cosmosdb_role_assignment_2" {
 resource "azurerm_cognitive_account" "openai" {
   name                  = local.openai_name
   location              = local.location
-  resource_group_name   = azurerm_resource_group.rg.name
+  resource_group_name   = data.azurerm_resource_group.rg.name
   kind                  = "OpenAI"
   sku_name              = "S0"
   public_network_access_enabled = true
@@ -658,7 +664,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment_gpt4o" {
   depends_on           = [azurerm_cognitive_account.openai]
   sku {
     name = "GlobalStandard"
-    capacity = 100
+    capacity = 10
   }
   model {
     format  = "OpenAI"
@@ -693,7 +699,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment_embeddings" {
 resource "azurerm_role_assignment" "acr_pull" {
   principal_id         = azurerm_linux_web_app.webapp.identity[0].principal_id
   role_definition_name = "AcrPull"
-  scope                = data.azurerm_container_registry.acr.id
+  scope                = azurerm_container_registry.acr.id
   depends_on = [
     azurerm_linux_web_app.webapp
   ]
@@ -703,7 +709,7 @@ resource "azurerm_role_assignment" "acr_pull" {
 resource "azurerm_role_assignment" "acr_pull_dev" {
   principal_id         = azurerm_linux_web_app.webappdev.identity[0].principal_id
   role_definition_name = "AcrPull"
-  scope                = data.azurerm_container_registry.acr.id
+  scope                = azurerm_container_registry.acr.id
   depends_on = [
     azurerm_linux_web_app.webappdev
   ]

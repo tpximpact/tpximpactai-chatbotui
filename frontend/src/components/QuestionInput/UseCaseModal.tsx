@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Modal, IconButton, Button } from '@fluentui/react';
 import styles from './QuestionInput.module.css'; // Import custom CSS styles for the modal
-import { ShareButton } from '../common/Button';
+import { ColouredButton } from '../common/Button';
 import useCaseData from './useCaseData.json'
 import { XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -68,7 +68,7 @@ const UseCasePage: React.FC<UseCasePageProps>  = ({questionNum, width, height, s
 
       <div style={{marginTop:'30px', marginBottom:'25px'}}>
 
-        <ShareButton
+        <ColouredButton
           onClick={() => {
             sendExampleQuestion(data.prompt)
             setPage(-1)
@@ -151,7 +151,7 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
           <div style={{ textAlign: 'center' , marginBottom:'30px', marginTop:'30px'}}>
           {
           page === -1 ? (
-            <ShareButton
+            <ColouredButton
               onClick={() => {
                 onClose()
               }}
@@ -159,7 +159,7 @@ const UseCaseModal: React.FC<CustomModalProps> = ({ isOpen, onClose, sendExample
               color="random"
             />
           ):(
-            <ShareButton
+            <ColouredButton
               onClick={() => {
                 setPage(-1)
               }}

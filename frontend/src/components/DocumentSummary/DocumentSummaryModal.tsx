@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Modal, IconButton, on } from '@fluentui/react';
 import styles from './DocumentSummaryModal.module.css'; 
 import DocumentUpload from './DocumentUpload';
-import { ShareButton } from '../common/Button';
+import { ColouredButton } from '../common/Button';
 import { deleteDocuments, documentSummaryReduceApi, getUserIdentity } from '../../api';
 import LoadingBar from '../LoadingBar';
 import Loading from '../Loading';
@@ -282,7 +282,7 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                             styles={{ root: { borderRadius: '10px', margin: '10px 10px 10px 0px' } }}
                             className={styles.closeButton} // Apply custom CSS class for close button
                             />
-                        <ShareButton onClick={onSubmit} text={'Summarise'} style={{marginLeft:'auto'}} disabled={disabled}/>
+                        <ColouredButton onClick={onSubmit} text={'Summarise'} style={{marginLeft:'auto'}} disabled={disabled}/>
 
                     </div>
                 </>
@@ -333,7 +333,9 @@ const DocumentSummaryModal: React.FC<CustomModalProps> = ({ isOpen, onClose, onS
                         </p>
                     </div>
                     <div className={styles.modalContent}>
-                        If you have a document that’s too big for a single prompt, you can upload it here to have it summarised or ask questions about it. <br /> Only you can see documents you upload.
+                        If you have a document that’s too big for a single prompt, you can upload it here to have it summarised or ask questions about it. <br /> 
+                        Only you can see documents you upload. <br/>
+                        <span>Supported file types are: .pdf, .docx, .txt, .csv</span>
                     </div>
                     <DocumentUpload 
                     handleAskQuestions={handleAskQuestions} 

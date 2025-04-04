@@ -13,3 +13,4 @@ static/assets
 terraform.tfstate
 terraform.tfstate.backup
 secrets.json
+static/index.html

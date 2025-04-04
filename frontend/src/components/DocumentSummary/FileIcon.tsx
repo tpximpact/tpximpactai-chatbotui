@@ -3,6 +3,7 @@ import pdfIcon from '../../assets/pdf.png'
 import docxIcon from '../../assets/doc.png'
 import txtIcon from '../../assets/txt.png'
 import csvIcon from '../../assets/csv.png'
+import excelIcon from '../../assets/excel.png'
 import COLOURS from '../../constants/COLOURS';
 
 
@@ -13,36 +14,24 @@ type FileIconProps = {
 };
 
 const FileIcon: React.FC<FileIconProps> = ({ title, key, selected }) => {
-    const getFileExtension = (filename: string) => {
-        const extension = filename.split('.').pop();
-        return extension?.toLowerCase();
-    };
-
-    const getIcon = (extension: string | undefined) => {
-        switch (extension) {
-            case 'pdf':
-                return <i className="fa fa-file-pdf-o"></i>;
-                //             <img src={
-//                 fileType === 'application/pdf' ?
-//                  pdfIcon : fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ?
-//                   docxIcon : txtIcon} 
-//                   alt={fileType} 
-//                   key={key} 
-//                   width={25} 
-//                   height={25} 
-//                   />
-            case 'docx':
-                return <i className="fa fa-file-word-o"></i>;
-            case 'txt':
-                return <i className="fa fa-file-text-o"></i>;
-            default:
-                return <i className="fa fa-file-o"></i>;
-        }
-    };
-
-    const extension = getFileExtension(title);
     const shortTitle = title.length > 26 ? title.slice(0, 23) + '...' : title;
-
+    
+    const getIconImg = (title: string) => {
+        switch (true) {
+            case title.endsWith('.pdf'):
+                return pdfIcon;
+            case title.endsWith('.docx'):
+            return docxIcon;
+            case title.endsWith('.csv'):
+                return csvIcon;
+            case title.endsWith('.xlsx'):
+                return excelIcon;
+            case title.endsWith('.txt'):
+                return txtIcon;
+            default:
+                return txtIcon;
+        }
+    }
 
     return (
         <div style={{
@@ -57,10 +46,7 @@ const FileIcon: React.FC<FileIconProps> = ({ title, key, selected }) => {
         }}>
             <img 
                 style={{alignSelf:'center', textAlign:'center'}}
-                src={title.includes('.pdf') ?
-                pdfIcon : title.includes('.docx') ?
-                docxIcon : title.includes('.csv') ?
-                csvIcon : txtIcon}
+                src={getIconImg(title)}
                 alt={title}
                 key={key}
                 width={40}

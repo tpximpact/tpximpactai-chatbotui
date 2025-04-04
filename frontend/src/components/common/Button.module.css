@@ -1,4 +1,4 @@
-.shareButtonRoot {
+.colouredButtonRoot {
     min-width: 110px;
     height: 50px;
     padding: 14px 22px;
@@ -29,7 +29,7 @@
   }
   
     
-  .shareButtonRoot span {
+  .colouredButtonRoot span {
     line-height: 20px;
     color: hsl(0, 0%, 0%);
     font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
@@ -42,7 +42,7 @@
     color: #a9a9a9;
   }
 
-  .shareButtonRoot i, .shareButtonRoot:hover i {
+  .colouredButtonRoot i, .colouredButtonRoot:hover i {
     color: #FFFFFF !important;
   }
 
@@ -91,7 +91,7 @@
   }
 
   @media (max-width: 480px) {
-    .shareButtonRoot {
+    .colouredButtonRoot {
       width: auto; 
       padding: 5px 8px; 
     }
