@@ -2,7 +2,7 @@
 
 https://github.com/microsoft/sample-app-aoai-chatGPT
 
-This repo contains sample code for a simple chat webapp that integrates with Azure OpenAI. Note: some portions of the app use preview APIs.
+This repo contains sample code for a simple chat webapp that integrates with Azure OpenAI. Note: some portions of the app use preview APIs
 
 ## Prerequisites
 
