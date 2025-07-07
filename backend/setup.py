@@ -37,7 +37,7 @@ from backend.utils import generateFilterString, generateSimpleFilterString, pars
 from opentelemetry.trace import SpanKind
 from opentelemetry import trace
 from opentelemetry import metrics
-from azure.monitor.opentelemetry import configure_azure_monitor
+# from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.monitor.events.extension import track_event
 
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
@@ -48,11 +48,11 @@ from langchain_community.document_loaders import UnstructuredExcelLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 
 MONITORING_ENABLED = False
-if MONITORING_ENABLED:
-    configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
-    tracer = trace.get_tracer(__name__)
-    meter = metrics.get_meter_provider().get_meter("otel_azure_monitor_counter_demo")
-    counter = meter.create_counter("counter")
+# if MONITORING_ENABLED:
+#     configure_azure_monitor(connection_string= os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+#     tracer = trace.get_tracer(__name__)
+#     meter = metrics.get_meter_provider().get_meter("otel_azure_monitor_counter_demo")
+#     counter = meter.create_counter("counter")
 
 from backend.utils import generateFilterString, parse_multi_columns
 
